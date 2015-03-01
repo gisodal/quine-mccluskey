@@ -90,6 +90,7 @@ class QM:
       return 0,'1'
 
     primes = self.compute_primes(ones + dc)
+    print "primes: "+str(primes)+"\n"
     return self.unate_cover(list(primes), ones)
 
   def compute_primes(self, cubes):
@@ -314,6 +315,7 @@ def main():
     variables = int(opts.variables)
 
     qm = QM([chr(code) for code in xrange(ord('A'),ord('A')+variables)])
+    stdout.write("variables: "+str(qm.variables)+'\n')
     soln = qm.solve(ones, dc)
     if len(soln) == 0:
         stdout.write('contradiction\n')
