@@ -2,74 +2,70 @@
 
 using namespace std;
 
-inline uint32_t bitcount(uint32_t i){
-    i = i - ((i >> 1) & 0x55555555);
-    i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
-    return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
-}
-
-inline bool is_power_of_two_or_zero(x){
-    return (x & (x - 1)) == 0;
-}
-
-inline prime *merge(i, j){
-    if i[1] != j[1]:
-        return NULL;
-    y = i[0] ^ j[0]
-    if(!is_power_of_two_or_zero(y))
-        return NULL;
-
-    //return (i[0] & j[0],i[1]|y);
-    return NULL;
-}
-
-qm::qm(){
-
-}
-
-qm::~qm(){
-    clear();
-}
-
-void qm::clear(){
-    variables.clear();
-    cubes.clear();
-    primes.clear();
-}
-
-int qm::solve(){
-    if(cubes.size() == 0)
-        return 0;
-    if(cubes.size() == (1 << variables.size()))
-        return 1;
-
-    if(compute_primes())
-        return -1;
-
-    if(unate_cover())
-        return -2;
-
-    return 2;
-}
-
 int qm::compute_primes(){
-    vector< vector<prime_t> > sigma(variables.size()+1);
+    uint32_t delta_size, sigma_size, primes, groups;
 
-    for(auto it = cubes.begin(); it != cubes.end(); it++)
-        sigma[bitcount(*it)].push_back(prime(*it,0));
+    uint32_t *prime1, *prime2, *offset, *size, *check, *sigma1, *sigma2;
 
-    uint32_t sigmas = sigma.size();
-    while(sigmas){
 
+    offset[0] = 0;
+    offset[1] = 1;
+    for(int i = 1; i <= groups; i++){
+        offset[i] = offset[i-1] + pascal(groups,i-1);
+        size[i] = 0;
     }
 
 
+    for(int G = groups; G > 1; G--){
+        uint32_t *noffset = offset + G;
+        uint32_t *nsize = size + G;
+
+        for(int group = 0; group < G-1; group++){
+            noffset[group] = noffset[group-1]+nsize[group-1];
+            nsize[group] = 0;
+
+            for(int i = 0; i < size[group]; i++){
+                uint32_t oi = offset[group]+i,
+                for(int j = 0; j < size[group+1]; j++){
+                    uint32_t oj = offset[group+1]+j;
+
+                    uint32_t p = s0[oi] ^ s0[oj];
+                    if(s1[oi] == s1[oj] && is_power_of_two_or_zero(p)){
+                        // merge
+                        uint32_t os = noffset[group] + nsize[group];
+                        s0[os] = s0[oi] & s0[oj];
+                        s1[os] = s1[oi] | p;
+                        nsize[group]++;
+
+                        check[oi] = 2;
+                        check[oj] = 2;
+                    }
+                }
+            }
+        }
+
+        // update offsets
+        group_size += G;
+        offset = noffset;
+    }
+
+    uint32_t SIZE = offset[-1] + size[-1] + size[0];
+    uint32_t PRIMES = 0;
+    for(int i = 0; i < SIZE; i++){
+        if(check[i] == 1){
+            prime1[PRIMES] = sigma0[i];
+            prime2[PRIMES] = sigma1[i];
+            PRIMES++;
+        }
+    }
+
+    printf("primes: ");
+    for(int i = 0; i < PRIMES; i++)
+        printf("(%d,%d) ", prime1[i], prime2[i]);
+
     return 0;
 }
 
-int qm::unate_cover(){
-    return 0;
-}
 
 
 
