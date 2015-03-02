@@ -13,7 +13,7 @@
 # see 'Makefile' for more information
 
 # project name
-PROJECT=parser
+PROJECT=qm
 
 # project version
 VERSION=1

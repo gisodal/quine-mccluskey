@@ -1,27 +1,80 @@
 #include "qm.h"
-
+#include <alloca.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 using namespace std;
 
-inline uint32_t bitcount(uint32_t i){
-    i = i - ((i >> 1) & 0x55555555);
-    i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
-    return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
+static inline uint32_t bitcount(uint32_t x){
+    x = x - ((x >> 1) & 0x55555555);
+    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+    return (((x + (x >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 }
 
-inline bool is_power_of_two_or_zero(x){
+static inline bool is_power_of_two_or_zero(const uint32_t x){
     return (x & (x - 1)) == 0;
 }
 
-inline prime *merge(i, j){
-    if i[1] != j[1]:
-        return NULL;
-    y = i[0] ^ j[0]
-    if(!is_power_of_two_or_zero(y))
-        return NULL;
-
-    //return (i[0] & j[0],i[1]|y);
-    return NULL;
+static inline uint32_t log2(const uint32_t x) { // for x86 and x86-64 architecture
+    uint32_t y;
+    asm ( "\tbsr %1, %0\n"
+            : "=r"(y)
+            : "r" (x)
+        );
+    return y;
 }
+
+static inline uint32_t pow2(const uint32_t x) {
+    return 1 << x;
+}
+
+static inline uint32_t logsum(const uint32_t x) {
+    return (x << 1) - 1;
+}
+
+static inline uint32_t powsum2(const uint32_t x) {
+    return (1 << (x+1)) - 1;
+}
+
+static inline uint32_t factorial(const uint32_t x) {
+    static const uint32_t table[] = {1, 1, 2, 6, 24, 120, 720,
+        5040, 40320, 362880, 3628800, 39916800, 479001600};
+    return table[x];
+}
+
+static inline uint32_t pascall(const uint32_t x){
+    static const uint32_t table [][11] = {
+        {1,0,0,0,0,0,0,0,0,0,0},
+        {1 1,0,0,0,0,0,0,0,0,0},
+        {1,2,1,0,0,0,0,0,0,0,0},
+        {1,3,3,1,0,0,0,0,0,0,0},
+        {1,4,6,4,1,0,0,0,0,0,0},
+        {1,5,10,10,5,1,0,0,0,0,0},
+        {1,6,15,20,15,6,1,0,0,0,0},
+        {1,7,21,35,35,21,7,1,0,0,0},
+        {1,8,28,56,70,56,28,8,1,0,0},
+        {1,9,36,84,126,126,84,36,9,1,0},
+        {1,10,45,120,210,252,210,120,45,10,1}
+    }
+    return table[x];
+}
+
+
+static inline uint32_t binom(const uint32_t x, const uint32_t y){
+    return factorial(x)/(factorial(y)*factorial(x-y));
+}
+
+static inline uint32_t roundup2(uint32_t x){
+    x--;
+    x |= x >> 1;  // handle  2 bit numbers
+    x |= x >> 2;  // handle  4 bit numbers
+    x |= x >> 4;  // handle  8 bit numbers
+    x |= x >> 8;  // handle 16 bit numbers
+    x |= x >> 16; // handle 32 bit numbers
+    x++;
+    return x;
+}
+
 
 qm::qm(){
 
@@ -53,16 +106,42 @@ int qm::solve(){
 }
 
 int qm::compute_primes(){
-    vector< vector<prime_t> > sigma(variables.size()+1);
+    uint32_t vars = variables.size();
+    uint32_t groups = vars+1;
+    uint32_t delta_size = (groups*(groups+1))/2;
+    uint32_t sigma_size = cubes.size()*2;
+    uint32_t total_size = 2*cubes.size() + 2*delta_size + 3*sigma_size;
 
-    for(auto it = cubes.begin(); it != cubes.end(); it++)
-        sigma[bitcount(*it)].push_back(prime(*it,0));
+    uint32_t *data = (uint32_t*) alloca(sizeof(uint32_t)*total_size);
+    uint32_t *prime1 = data;
+    uint32_t *prime2 = prime1 + cubes.size();
 
-    uint32_t sigmas = sigma.size();
-    while(sigmas){
+    uint32_t *group_size = prime2 + cubes.size();
+    uint32_t *offset = group_size + delta_size;
+    uint32_t *check = offset + delta_size;
+    uint32_t *sigma1 = check + delta_size;
+    uint32_t *sigma2 = sigma1 + sigma_size;
 
+    uint32_t primes = 0;
+
+    memset(group_size, 0, sizeof(uint32_t)*delta_size);
+
+    offset[0] = 0;
+    offset[1] = 1;
+    for(uint32_t i = 1; i <= groups; i++){
+        offset[i] = offset[i-1] + binom(vars,i-1);
+        printf("%d: (%d,%d) = %d\n", i, vars, i-1, binom(vars,i-1));
     }
 
+    for(int i = 0; i < groups; i++)
+        printf("%2d: %d\n", offset[i]);
+
+//    for(uint32_t i = 0; i < cubes.size(); i++){
+//        sigma1[bitcount(i)] = cubes[i];
+//        sigma2[i] = 0;
+//    }
+//
+    //sigma[bitcount(*it)].push_back(prime(*it,0));
 
     return 0;
 }
