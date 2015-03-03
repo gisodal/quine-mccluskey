@@ -10,5 +10,6 @@ int main(){
     q.add_model(3);
     q.add_model(4);
     q.add_model(6);
+    q.add_model(7);
     q.compute_primes();
 }

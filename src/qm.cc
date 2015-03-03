@@ -119,12 +119,12 @@ int qm::compute_primes(){
     uint32_t vars = variables.size();
     uint32_t GROUPS = vars+1;
     uint32_t delta_size = (GROUPS*(GROUPS+1))/2;
-    uint32_t sigma_size = cubes.size()*2+pow2(vars);
-    uint32_t total_size = sizeof(uint32_t)*(2*cubes.size()+ 1 + 2*delta_size + sigma_size) + sigma_size*sizeof(bool);
+    uint32_t sigma_size = cubes.size()*vars;
+    uint32_t total_size = sizeof(uint32_t)*(pow2(vars) + 2*delta_size + sigma_size) + sizeof(char)*sigma_size;
 
     uint32_t *data = (uint32_t*) alloca(total_size);
     uint32_t *prime = data;
-    uint32_t *size = prime + cubes.size() + 1;
+    uint32_t *size = prime + pow2(vars);
     uint32_t *offset = size + delta_size;
     char *check = (char*) (offset + delta_size);
     uint32_t *sigma = (uint32_t*) (check + sigma_size);
@@ -144,12 +144,11 @@ int qm::compute_primes(){
         offset[i] = offset[i-1] + size[i-1];
         size[i-1] = 0;
     }
-    size[GROUPS] = 0;
 
     for(uint32_t i = 0; i < cubes.size(); i++){
         uint32_t cube = cubes[i];
         uint32_t index = offset[data[cube]] + size[data[cube]]++;
-        sigma[index] = cubes[i];
+        sigma[index] = cube;
     }
 
     uint32_t groups = GROUPS-1;

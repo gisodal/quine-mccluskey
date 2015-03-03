@@ -22,12 +22,10 @@ class qm {
         void clear();
         int solve();
 
-
         int compute_primes();
         int unate_cover();
 
     private:
-
         std::vector<uint32_t> variables;         // variables with least significant bit first (variables[0])
         std::vector<uint32_t> cubes;
         std::vector<prime_t> primes;
