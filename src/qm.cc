@@ -15,6 +15,10 @@ static inline bool is_power_of_two_or_zero(const uint32_t x){
     return (x & (x - 1)) == 0;
 }
 
+static inline bool is_power_of_two_or_zero(const uint16_t x){
+    return (x & (x - 1)) == 0;
+}
+
 static inline uint32_t log2(const uint32_t x) { // for x86 and x86-64 architecture
     uint32_t y;
     asm ( "\tbsr %1, %0\n"
@@ -42,26 +46,35 @@ static inline uint32_t factorial(const uint32_t x) {
     return table[x];
 }
 
-static inline uint32_t pascal(const uint32_t x){
-    static const uint32_t table [][11] = {
-        {1,0,0,0,0,0,0,0,0,0,0},
-        {1 1,0,0,0,0,0,0,0,0,0},
-        {1,2,1,0,0,0,0,0,0,0,0},
-        {1,3,3,1,0,0,0,0,0,0,0},
-        {1,4,6,4,1,0,0,0,0,0,0},
-        {1,5,10,10,5,1,0,0,0,0,0},
-        {1,6,15,20,15,6,1,0,0,0,0},
-        {1,7,21,35,35,21,7,1,0,0,0},
-        {1,8,28,56,70,56,28,8,1,0,0},
-        {1,9,36,84,126,126,84,36,9,1,0},
+static inline const uint32_t* pascal(const uint32_t x){
+    static const uint32_t table[][11] = {
+        {1},
+        {1,1},
+        {1,2,1},
+        {1,3,3,1},
+        {1,4,6,4,1},
+        {1,5,10,10,5,1},
+        {1,6,15,20,15,6,1},
+        {1,7,21,35,35,21,7,1},
+        {1,8,28,56,70,56,28,8,1},
+        {1,9,36,84,126,126,84,36,9,1},
         {1,10,45,120,210,252,210,120,45,10,1}
-    }
+    };
     return table[x];
 }
 
 
 static inline uint32_t binom(const uint32_t x, const uint32_t y){
     return factorial(x)/(factorial(y)*factorial(x-y));
+}
+
+bool is_little_endian(){
+    union {
+        uint32_t i;
+        char c[4];
+    } bint = {0x01020304};
+
+    return bint.c[0] != 1;
 }
 
 static inline uint32_t roundup2(uint32_t x){
@@ -104,88 +117,102 @@ int qm::solve(){
 
 int qm::compute_primes(){
     uint32_t vars = variables.size();
-    uint32_t groups = vars+1;
-    uint32_t delta_size = (groups*(groups+1))/2;
-    uint32_t sigma_size = cubes.size()*2;
-    uint32_t total_size = 2*cubes.size() + 2*delta_size + 3*sigma_size;
+    uint32_t GROUPS = vars+1;
+    uint32_t delta_size = (GROUPS*(GROUPS+1))/2;
+    uint32_t sigma_size = cubes.size()*2+pow2(vars);
+    uint32_t total_size = sizeof(uint32_t)*(2*cubes.size()+ 1 + 2*delta_size + sigma_size) + sigma_size*sizeof(bool);
 
-    uint32_t *data = (uint32_t*) alloca(sizeof(uint32_t)*total_size);
-    uint32_t *prime1 = data;
-    uint32_t *prime2 = prime1 + cubes.size();
+    uint32_t *data = (uint32_t*) alloca(total_size);
+    uint32_t *prime = data;
+    uint32_t *size = prime + cubes.size() + 1;
+    uint32_t *offset = size + delta_size;
+    char *check = (char*) (offset + delta_size);
+    uint32_t *sigma = (uint32_t*) (check + sigma_size);
 
-    uint32_t *group_size = prime2 + cubes.size();
-    uint32_t *offset = group_size + delta_size;
-    uint32_t *check = offset + delta_size;
-    uint32_t *sigma1 = check + delta_size;
-    uint32_t *sigma2 = sigma1 + sigma_size;
+    memset(size, 0, sizeof(uint32_t)*delta_size);
+    memset(check, 0, sizeof(char)*sigma_size);
 
-    uint32_t primes = 0;
-
-    memset(group_size, 0, sizeof(uint32_t)*delta_size);
-
-    offset[0] = 0;
-    offset[1] = 1;
-    for(uint32_t i = 1; i <= groups; i++){
-        offset[i] = offset[i-1] + pascal(vars,i-1);
-        printf("%d: (%d,%d) = %d\n", i, vars, i-1, pascal(vars,i-1));
+    for(uint32_t i = 0; i < cubes.size(); i++){
+        uint32_t cube = cubes[i];
+        uint32_t group = bitcount(cube);
+        data[cube] = group;
+        size[group]++;
     }
 
-    for(int i = 0; i < groups; i++)
-        printf("%2d: %d\n", offset[i]);
+    offset[0] = 0;
+    for(uint32_t i = 1; i <= GROUPS; i++){
+        offset[i] = offset[i-1] + size[i-1];
+        size[i-1] = 0;
+    }
+    size[GROUPS] = 0;
 
-//    for(uint32_t i = 0; i < cubes.size(); i++){
-//        sigma1[bitcount(i)] = cubes[i];
-//        sigma2[i] = 0;
-//    }
-//
-    //sigma[bitcount(*it)].push_back(prime(*it,0));
+    for(uint32_t i = 0; i < cubes.size(); i++){
+        uint32_t cube = cubes[i];
+        uint32_t index = offset[data[cube]] + size[data[cube]]++;
+        sigma[index] = cubes[i];
+    }
 
-    for(int G = groups; G > 1; G--){
-        uint32_t *noffset = offset + G;
-        uint32_t *nsize = size + G;
+    uint32_t groups = GROUPS-1;
+    uint32_t o = offset[groups+1]+size[groups+1];
+    while(groups){
+        uint32_t *noffset = offset + groups+1;
+        uint32_t *nsize = size + groups+1;
 
-        for(int group = 0; group < G-1; group++){
-            noffset[group] = noffset[group-1]+nsize[group-1];
-            nsize[group] = 0;
+        for(uint32_t group = 0; group < groups; group++){
+            noffset[group] = o;
 
-            for(int i = 0; i < size[group]; i++){
-                uint32_t oi = offset[group]+i,
-                for(int j = 0; j < size[group+1]; j++){
+            for(uint32_t i = 0; i < size[group]; i++){
+                uint32_t oi = offset[group]+i;
+                for(uint32_t j = 0; j < size[group+1]; j++){
                     uint32_t oj = offset[group+1]+j;
 
-                    uint32_t p = s0[oi] ^ s0[oj];
-                    if(s1[oi] == s1[oj] && is_power_of_two_or_zero(p)){
+                    uint16_t *si = (uint16_t*) (sigma + oi);
+                    uint16_t *sj = (uint16_t*) (sigma + oj);
+                    uint16_t p = si[0] ^ sj[0];
+                    if(si[1] == sj[1] && is_power_of_two_or_zero(p)){
                         // merge
-                        uint32_t os = noffset[group] + nsize[group];
-                        s0[os] = s0[oi] & s0[oj];
-                        s1[os] = s1[oi] | p;
+                        sigma[o] = (si[0] & sj[0]) | ((si[1]|p)<<16);
                         nsize[group]++;
 
-                        check[oi] = 2;
-                        check[oj] = 2;
+                        check[oi] = 1;
+                        check[oj] = 1;
+                        o++;
                     }
                 }
             }
         }
 
         // update offsets
-        group_size += G;
+        size = nsize;
         offset = noffset;
+        groups--;
+
+        bool done = true;
+        for(uint32_t group = 0; group < groups; group++){
+            if(nsize[group] != 0 && nsize[group+1] != 0){
+               done = false;
+               break;
+            }
+        }
+
+        if(done)
+            break;
     }
 
-    uint32_t SIZE = offset[-1] + size[-1] + size[0];
+    uint32_t SIZE = offset[-1] + size[-1];
     uint32_t PRIMES = 0;
-    for(int i = 0; i < SIZE; i++){
-        if(check[i] == 1){
-            prime1[PRIMES] = sigma0[i];
-            prime2[PRIMES] = sigma1[i];
+    for(uint32_t i = 0; i < o; i++){
+        if(!check[i]){
+            prime[PRIMES] = sigma[i];
             PRIMES++;
         }
     }
 
     printf("primes: ");
-    for(int i = 0; i < PRIMES; i++)
-        printf("(%d,%d) ", prime1[i], prime2[i]);
+    for(uint32_t i = 0; i < PRIMES; i++){
+        uint16_t *p = (uint16_t*) (prime + i);
+        printf("(%d,%d) ", p[0], p[1]);
+    }
 
     return 0;
 }

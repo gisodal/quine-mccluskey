@@ -108,6 +108,8 @@ class QM:
       sigma[bitcount(i)].add((i,0))
 
     primes = set()
+    groups = self.numvars+1
+
     while sigma:
       nsigma = []
       redundant = set()
@@ -121,7 +123,14 @@ class QM:
               redundant |= set([a, b])
         nsigma.append(nc)
       primes |= set(c for cubes in sigma for c in cubes) - redundant
+      print "groups: "+str(groups)
+      groups = groups - 1
+      print "  sigma    : "+str(sigma)
+      print "  redundant: "+str(redundant)
+      print "  primes   : "+str(set(c for cubes in sigma for c in cubes) - redundant)+"\n"
       sigma = nsigma
+
+    print "primes: "+str(primes)+"\n"
     return primes
 
   def unate_cover(self, primes, ones):
