@@ -90,7 +90,6 @@ class QM:
       return 0,'1'
 
     primes = self.compute_primes(ones + dc)
-    print "primes: "+str(primes)+"\n"
     return self.unate_cover(list(primes), ones)
 
   def compute_primes(self, cubes):
@@ -290,6 +289,7 @@ def is_power_of_two_or_zero(x):
 def merge(i, j):
   """ Combine two minterms. """
 
+  print "merge: "+str(i)+","+str(j);
   if i[1] != j[1]:
     return None
   y = i[0] ^ j[0]

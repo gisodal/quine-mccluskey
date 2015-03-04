@@ -1,0 +1,55 @@
+#!/bin/bash
+
+DIR=$( cd "$( dirname "$0" )/.." && pwd )
+
+function CtoM(){
+    local C=("$@")
+    local M=""
+    for ((i = 0; i < ${#C[@]}; i++)); do
+        if [ ${C[$i]} -eq 1 ]; then
+            M="$M,$i"
+        fi
+        M=${M#","}
+    done
+    echo $M
+}
+
+function progs(){
+    $DIR/pylibs/qm.py -v$1 -o$2 | sed 's:^:    :'
+    echo -e "\n--------------------------------------\n"
+    $DIR/bin/qm -v$1 -o$2 | sed 's:^:    :'
+
+}
+
+VARS=2
+MODELS=$(echo "2^$VARS" | bc)
+for ((ones = 1; ones <= $MODELS; ones++)); do
+    C=()
+    for ((i = 0; i < $ones; i++)); do
+        C[$i]=1
+    done
+    for ((i = $ones; i < $MODELS; i++)); do
+        C[$i]=0
+    done
+
+    changed=1
+    while [ $changed -eq 1 ]; do
+        M=$(CtoM ${C[@]})
+        echo -e "\n\n======================================="
+        echo -e "VARIABLES: $VARS MODELS: $M\n"
+        progs $VARS $M
+
+        changed=0
+        for ((i = 0; i < ${#C[@]}-1; i++)); do
+            j=$(($i+1))
+            if [ ${C[$i]} -eq 1 -a ${C[$j]} -eq 0 ]; then
+                C[$i]=0
+                C[$j]=1
+                changed=1
+                break
+            fi
+        done
+    done
+done
+echo
+

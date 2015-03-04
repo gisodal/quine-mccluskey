@@ -115,27 +115,39 @@ int qm::solve(){
     return 0;
 }
 
+bool qm::valid(){
+    uint32_t vars = variables.size();
+    if(vars > 0){
+        uint32_t max = pow2(vars);
+        for(unsigned int i = 0; i < cubes.size(); i++)
+            if(cubes[i] >= max)
+                return false;
+        return true;
+    }
+    return false;
+}
+
 int qm::compute_primes(){
     uint32_t vars = variables.size();
     uint32_t GROUPS = vars+1;
     uint32_t delta_size = (GROUPS*(GROUPS+1))/2;
     uint32_t sigma_size = cubes.size()*vars;
-    uint32_t total_size = sizeof(uint32_t)*(pow2(vars) + 2*delta_size + sigma_size) + sizeof(char)*sigma_size;
+    uint32_t total_size =  sizeof(cube_t)*sigma_size + sizeof(uint32_t)*(pow2(vars)+2*delta_size) + sizeof(char)*sigma_size;
 
     uint32_t *data = (uint32_t*) alloca(total_size);
-    uint32_t *prime = data;
-    uint32_t *size = prime + pow2(vars);
+    cube_t *prime = (cube_t*) data;
+    uint32_t *size = (uint32_t*) (prime + pow2(vars));
     uint32_t *offset = size + delta_size;
     char *check = (char*) (offset + delta_size);
-    uint32_t *sigma = (uint32_t*) (check + sigma_size);
+    cube_t *sigma = (cube_t*) (check + sigma_size);
 
     memset(size, 0, sizeof(uint32_t)*delta_size);
     memset(check, 0, sizeof(char)*sigma_size);
 
     for(uint32_t i = 0; i < cubes.size(); i++){
-        uint32_t cube = cubes[i];
-        uint32_t group = bitcount(cube);
-        data[cube] = group;
+        uint16_t c = cubes[i];
+        uint32_t group = bitcount(c);
+        data[c] = group;
         size[group]++;
     }
 
@@ -146,16 +158,29 @@ int qm::compute_primes(){
     }
 
     for(uint32_t i = 0; i < cubes.size(); i++){
-        uint32_t cube = cubes[i];
-        uint32_t index = offset[data[cube]] + size[data[cube]]++;
-        sigma[index] = cube;
+        uint16_t c = cubes[i];
+        uint32_t index = offset[data[c]] + size[data[c]]++;
+        sigma[index] = {c,0};
     }
 
     uint32_t groups = GROUPS-1;
     uint32_t o = offset[groups+1]+size[groups+1];
+
     while(groups){
+        printf("\ngroups: %d\n", groups+1);
         uint32_t *noffset = offset + groups+1;
         uint32_t *nsize = size + groups+1;
+
+        bool done = true;
+
+
+        for(uint32_t group = 0; group <= groups; group++){
+            printf("  %d: ", group);
+            uint32_t of = offset[group];
+            for(uint32_t i = 0; i < size[group]; i++)
+                printf("(%d,%d) ", sigma[of+i].s[0], sigma[of+i].s[1]);
+            printf("\n");
+        }
 
         for(uint32_t group = 0; group < groups; group++){
             noffset[group] = o;
@@ -165,40 +190,47 @@ int qm::compute_primes(){
                 for(uint32_t j = 0; j < size[group+1]; j++){
                     uint32_t oj = offset[group+1]+j;
 
-                    uint16_t *si = (uint16_t*) (sigma + oi);
-                    uint16_t *sj = (uint16_t*) (sigma + oj);
-                    uint16_t p = si[0] ^ sj[0];
-                    if(si[1] == sj[1] && is_power_of_two_or_zero(p)){
+                    cube_t &ci = sigma[oi], &cj = sigma[oj];
+                    uint16_t p = ci.s[0] ^ cj.s[0];
+                    if(ci.s[1] == cj.s[1] && is_power_of_two_or_zero(p)){
                         // merge
-                        sigma[o] = (si[0] & sj[0]) | ((si[1]|p)<<16);
+                        cube_t &co = sigma[o];
+                        co.s[0] = ci.s[0] & cj.s[0];
+                        co.s[1] = ci.s[0] | p;
                         nsize[group]++;
 
                         check[oi] = 1;
                         check[oj] = 1;
                         o++;
+                        done = false;
                     }
                 }
             }
         }
+
+        printf("prime %d: ", groups+1);
+        for(int i = offset[0]; i < noffset[0]; i++)
+            if(!check[i])
+                printf("(%d,%d) ", sigma[i].s[0],sigma[i].s[1]);
+        printf("\n");
+
+        if(done)
+            break;
 
         // update offsets
         size = nsize;
         offset = noffset;
         groups--;
 
-        bool done = true;
-        for(uint32_t group = 0; group < groups; group++){
-            if(nsize[group] != 0 && nsize[group+1] != 0){
-               done = false;
-               break;
-            }
-        }
-
-        if(done)
-            break;
+        //bool done = true;
+        //for(uint32_t group = 0; group < groups; group++){
+        //    if(nsize[group] != 0 && nsize[group+1] != 0){
+        //       done = false;
+        //       break;
+        //    }
+        //}
     }
 
-    uint32_t SIZE = offset[-1] + size[-1];
     uint32_t PRIMES = 0;
     for(uint32_t i = 0; i < o; i++){
         if(!check[i]){

@@ -1,0 +1,16 @@
+und
+disp offset[0]@groups+1
+disp noffset[0]@groups
+disp size[0]@groups+1
+disp nsize[0]@groups
+disp check[0]@sigma_size
+disp ((uint16_t*) sigma)[0]@sigma_size*2
+disp sj[0]@2
+disp si[0]@2
+disp oj
+disp oi
+disp j
+disp i
+disp o
+disp p
+
