@@ -150,10 +150,10 @@ int qm::compute_primes(){
     unsigned int MODELS = pow2(VARIABLES);
     unsigned int GROUPS = VARIABLES+1;
     unsigned int PRIMES = 0;
-    unsigned int meta_size = (GROUPS*(GROUPS+1))/2;
+    unsigned int meta_size = GROUPS;
     unsigned int cubes_size = 2*factorial(VARIABLES);
 
-    unsigned int total_size = sizeof(cube_t)*2*cubes_size + sizeof(uint32_t)*(MODELS+2*meta_size) + sizeof(char)*cubes_size;
+    unsigned int total_size = sizeof(cube_t)*2*cubes_size + sizeof(uint32_t)*(MODELS+2*2*meta_size) + sizeof(char)*cubes_size;
     if(total_size >= 800000){
         fprintf(stderr, "cannot fit > 8Mb onto stack!\n");
         exit(1);
@@ -162,8 +162,8 @@ int qm::compute_primes(){
     uint32_t *data = (uint32_t*) alloca(total_size);
     cube_t *prime = (cube_t*) data;
     uint32_t *size = (uint32_t*) (prime + MODELS);
-    uint32_t *offset = size + meta_size;
-    char *check = (char*) (offset + meta_size);
+    uint32_t *offset = size + 2*meta_size;
+    char *check = (char*) (offset + 2*meta_size);
     cube_t *cubes = (cube_t*) (check + cubes_size);
 
     memset(size, 0, sizeof(uint32_t)*meta_size);
@@ -194,16 +194,17 @@ int qm::compute_primes(){
     // quine-mccluskey
     unsigned int groups = GROUPS-1;
     cube_t *ccubes = cubes, *ncubes = cubes + cubes_size;
+    uint32_t *csize = size, *nsize = size + meta_size;
+    uint32_t *coffset = offset, *noffset = offset + meta_size;
     while(groups){
         printf("\ngroups: %d\n", groups+1);
-        uint32_t *noffset = offset + groups+1;
-        uint32_t *nsize = size + groups+1;
-
+        //uint32_t *noffset = offset + groups+1;
+        //uint32_t *nsize = size + groups+1;
 
         for(uint32_t group = 0; group <= groups; group++){
-            printf("  %d (%d) : ", group, size[group]);
-            uint32_t of = offset[group];
-            for(uint32_t i = 0; i < size[group]; i++)
+            printf("  %d (%d) : ", group, csize[group]);
+            uint32_t of = coffset[group];
+            for(uint32_t i = 0; i < csize[group]; i++)
                 printf("(%d,%d) ", ccubes[of+i].s[0], ccubes[of+i].s[1]);
             printf("\n");
         }
@@ -214,10 +215,10 @@ int qm::compute_primes(){
             noffset[group] = ncubes_size;
             nsize[group] = 0;
 
-            for(unsigned int i = 0; i < size[group]; i++){
-                unsigned int oi = offset[group]+i;
-                for(unsigned int j = 0; j < size[group+1]; j++){
-                    unsigned int oj = offset[group+1]+j;
+            for(unsigned int i = 0; i < csize[group]; i++){
+                unsigned int oi = coffset[group]+i;
+                for(unsigned int j = 0; j < csize[group+1]; j++){
+                    unsigned int oj = coffset[group+1]+j;
 
                     cube_t &ci = ccubes[oi], &cj = ccubes[oj];
                     uint16_t p = ci.s[0] ^ cj.s[0];
@@ -268,8 +269,8 @@ int qm::compute_primes(){
 
         // update offsets
         ccubes_size = ncubes_size;
-        size = nsize;
-        offset = noffset;
+        swap(csize, nsize);
+        swap(coffset, noffset);
         swap(ccubes, ncubes);
         groups--;
     }

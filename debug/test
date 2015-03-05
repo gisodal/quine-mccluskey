@@ -14,12 +14,12 @@ function CtoM(){
     echo $M
 }
 
-VARS_MIN=5
+VARS_MIN=3
 VARS_MAX=17
 for ((VARS=VARS_MIN; VARS < VARS_MAX; VARS++)); do
     echo "===> VARIABLES: $VARS"
     MODELS=$(echo "2^$VARS" | bc)
-    for ((ones = 26; ones <= $MODELS; ones++)); do
+    for ((ones = 2; ones <= $MODELS; ones++)); do
         echo "  ($ones/$MODELS)"
 
         C=()
