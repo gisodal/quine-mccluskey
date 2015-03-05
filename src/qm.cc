@@ -1,8 +1,11 @@
 #include "qm.h"
+#include <algorithm>
 #include <alloca.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <limits>
+
 using namespace std;
 
 static inline uint32_t bitcount(uint32_t x){
@@ -63,6 +66,17 @@ static inline const uint32_t* pascal(const uint32_t x){
     return table[x];
 }
 
+unsigned int space(const uint32_t n){
+    uint32_t base[11];
+    memcpy((void*) base,(void*) pascal(n), sizeof(uint32_t)*n+1);
+
+    unsigned int size = pow2(n);
+    for(int G = n+1; G > 0; G--)
+        for(int i = 0; i < G; i++)
+            size += (base[i] *= G-i);
+
+    return size;
+}
 
 static inline uint32_t binom(const uint32_t x, const uint32_t y){
     return factorial(x)/(factorial(y)*factorial(x-y));
@@ -99,18 +113,22 @@ qm::~qm(){
 
 void qm::clear(){
     variables.clear();
-    cubes.clear();
+    models.clear();
     primes.clear();
 }
 
 int qm::solve(){
-    if(cubes.size() == 0)
+    if(models.size() == 0){
+        printf("'0'\n");
         return 0;
-    if(cubes.size() == (1 << variables.size()))
+    } else if(models.size() == pow2(variables.size())){
+        printf("'1'\n");
         return 1;
-
-    if(compute_primes())
-        return -1;
+    } else if(models.size() == 1){
+        printf("(%d,0)\n",models[0]);
+        return 2;
+    } else if(compute_primes())
+        return 2;
 
     return 0;
 }
@@ -119,8 +137,8 @@ bool qm::valid(){
     uint32_t vars = variables.size();
     if(vars > 0){
         uint32_t max = pow2(vars);
-        for(unsigned int i = 0; i < cubes.size(); i++)
-            if(cubes[i] >= max)
+        for(unsigned int i = 0; i < models.size(); i++)
+            if(models[i] >= max)
                 return false;
         return true;
     }
@@ -128,127 +146,147 @@ bool qm::valid(){
 }
 
 int qm::compute_primes(){
-    uint32_t vars = variables.size();
-    uint32_t GROUPS = vars+1;
-    uint32_t delta_size = (GROUPS*(GROUPS+1))/2;
-    uint32_t sigma_size = cubes.size()*vars;
-    uint32_t total_size =  sizeof(cube_t)*sigma_size + sizeof(uint32_t)*(pow2(vars)+2*delta_size) + sizeof(char)*sigma_size;
+    unsigned int VARIABLES = variables.size();
+    unsigned int MODELS = pow2(VARIABLES);
+    unsigned int GROUPS = VARIABLES+1;
+    unsigned int PRIMES = 0;
+    unsigned int meta_size = (GROUPS*(GROUPS+1))/2;
+    unsigned int cube_size = 2*factorial(VARIABLES);
+
+    unsigned int total_size = sizeof(cube_t)*2*cube_size + sizeof(uint32_t)*(MODELS+2*meta_size) + sizeof(char)*cube_size;
+    if(total_size >= 800000){
+        fprintf(stderr, "cannot fit > 8Mb onto stack!\n");
+        exit(1);
+    }
 
     uint32_t *data = (uint32_t*) alloca(total_size);
     cube_t *prime = (cube_t*) data;
-    uint32_t *size = (uint32_t*) (prime + pow2(vars));
-    uint32_t *offset = size + delta_size;
-    char *check = (char*) (offset + delta_size);
-    cube_t *sigma = (cube_t*) (check + sigma_size);
+    uint32_t *size = (uint32_t*) (prime + MODELS);
+    uint32_t *offset = size + meta_size;
+    char *check = (char*) (offset + meta_size);
+    cube_t *cubes = (cube_t*) (check + cube_size);
 
-    memset(size, 0, sizeof(uint32_t)*delta_size);
-    memset(check, 0, sizeof(char)*sigma_size);
+    memset(size, 0, sizeof(uint32_t)*meta_size);
+    memset(check, 0, sizeof(char)*cube_size);
 
-    for(uint32_t i = 0; i < cubes.size(); i++){
-        uint16_t c = cubes[i];
+
+    // prepare cubes
+    unsigned int ccubes_size = models.size();
+    for(unsigned int i = 0; i < ccubes_size; i++){
+        uint16_t c = models[i];
         uint32_t group = bitcount(c);
         data[c] = group;
         size[group]++;
     }
 
     offset[0] = 0;
-    for(uint32_t i = 1; i <= GROUPS; i++){
+    for(unsigned int i = 1; i < GROUPS; i++){
         offset[i] = offset[i-1] + size[i-1];
         size[i-1] = 0;
-    }
+    }   size[GROUPS-1] = 0;
 
-    for(uint32_t i = 0; i < cubes.size(); i++){
-        uint16_t c = cubes[i];
+    for(unsigned int i = 0; i < ccubes_size; i++){
+        uint16_t c = models[i];
         uint32_t index = offset[data[c]] + size[data[c]]++;
-        sigma[index] = {c,0};
+        cubes[index] = {c,0};
     }
 
-    uint32_t groups = GROUPS-1;
-    uint32_t o = offset[groups+1]+size[groups+1];
-
+    // quine-mccluskey
+    unsigned int groups = GROUPS-1;
+    cube_t *ccubes = cubes, *ncubes = cubes + cube_size;
     while(groups){
         printf("\ngroups: %d\n", groups+1);
         uint32_t *noffset = offset + groups+1;
         uint32_t *nsize = size + groups+1;
 
-        bool done = true;
-
 
         for(uint32_t group = 0; group <= groups; group++){
-            printf("  %d: ", group);
+            printf("  %d (%d) : ", group, size[group]);
             uint32_t of = offset[group];
             for(uint32_t i = 0; i < size[group]; i++)
-                printf("(%d,%d) ", sigma[of+i].s[0], sigma[of+i].s[1]);
+                printf("(%d,%d) ", ccubes[of+i].s[0], ccubes[of+i].s[1]);
             printf("\n");
         }
 
-        for(uint32_t group = 0; group < groups; group++){
-            noffset[group] = o;
 
-            for(uint32_t i = 0; i < size[group]; i++){
-                uint32_t oi = offset[group]+i;
-                for(uint32_t j = 0; j < size[group+1]; j++){
-                    uint32_t oj = offset[group+1]+j;
+        unsigned int ncubes_size = 0;
+        for(unsigned int group = 0; group < groups; group++){
+            noffset[group] = ncubes_size;
 
-                    cube_t &ci = sigma[oi], &cj = sigma[oj];
+            for(unsigned int i = 0; i < size[group]; i++){
+                unsigned int oi = offset[group]+i;
+                for(unsigned int j = 0; j < size[group+1]; j++){
+                    unsigned int oj = offset[group+1]+j;
+
+                    cube_t &ci = ccubes[oi], &cj = ccubes[oj];
                     uint16_t p = ci.s[0] ^ cj.s[0];
                     if(ci.s[1] == cj.s[1] && is_power_of_two_or_zero(p)){
                         // merge
-                        cube_t &co = sigma[o];
-                        co.s[0] = ci.s[0] & cj.s[0];
-                        co.s[1] = ci.s[0] | p;
-                        nsize[group]++;
 
+                        cube_t &co = ncubes[ncubes_size];
+                        co.s[0] = ci.s[0] & cj.s[0];
+                        co.s[1] = ci.s[1] | p;
+                        co = {ci.s[0] & cj.s[0], ci.s[1] | p};
                         check[oi] = 1;
                         check[oj] = 1;
-                        o++;
-                        done = false;
+
+                        for(int c = ncubes_size-1; c >= 0; c--){
+                            if(co == ncubes[c])
+                                break;
+                            else if(c == 0){
+                                nsize[group]++;
+                                ncubes_size++;
+                            }
+                        }
                     }
                 }
             }
         }
 
+        // get primes
         printf("prime %d: ", groups+1);
-        for(int i = offset[0]; i < noffset[0]; i++)
-            if(!check[i])
-                printf("(%d,%d) ", sigma[i].s[0],sigma[i].s[1]);
+        for(unsigned int i = 0; i < ccubes_size; i++){
+            if(!check[i]){
+                bool insert = true;
+                for(unsigned int p = 0; p < PRIMES; p++)
+                    if(prime[p] == ccubes[i])
+                        insert = false;
+
+                if(insert){
+                    printf("(%d,%d) ", ccubes[i].s[0],ccubes[i].s[1]);
+                    prime[PRIMES++] = ccubes[i];
+                }
+            } else check[i] = 0;
+        }
         printf("\n");
 
-        if(done)
+        if(ncubes_size == 0)
             break;
 
         // update offsets
+        ccubes_size = ncubes_size;
         size = nsize;
         offset = noffset;
+        swap(ccubes, ncubes);
         groups--;
-
-        //bool done = true;
-        //for(uint32_t group = 0; group < groups; group++){
-        //    if(nsize[group] != 0 && nsize[group+1] != 0){
-        //       done = false;
-        //       break;
-        //    }
-        //}
     }
 
-    uint32_t PRIMES = 0;
-    for(uint32_t i = 0; i < o; i++){
-        if(!check[i]){
-            prime[PRIMES] = sigma[i];
-            PRIMES++;
-        }
-    }
+    sort(prime, prime+PRIMES);
 
-    printf("primes: ");
     for(uint32_t i = 0; i < PRIMES; i++){
+        if( i > 0)
+            printf(",");
         uint16_t *p = (uint16_t*) (prime + i);
-        printf("(%d,%d) ", p[0], p[1]);
+        printf("(%d,%d)", p[0], p[1]);
     }
+    printf("\n");
 
     return 0;
 }
 
+void qm::uniq(cube_t*, unsigned int){
 
+}
 
 
 

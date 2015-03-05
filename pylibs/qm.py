@@ -90,7 +90,7 @@ class QM:
       return 0,'1'
 
     primes = self.compute_primes(ones + dc)
-    return self.unate_cover(list(primes), ones)
+    return [0,primes] #self.unate_cover(list(primes), ones)
 
   def compute_primes(self, cubes):
     """
@@ -122,14 +122,20 @@ class QM:
               redundant |= set([a, b])
         nsigma.append(nc)
       primes |= set(c for cubes in sigma for c in cubes) - redundant
-      print "groups: "+str(groups)
       groups = groups - 1
-      print "  sigma    : "+str(sigma)
-      print "  redundant: "+str(redundant)
-      print "  primes   : "+str(set(c for cubes in sigma for c in cubes) - redundant)+"\n"
+
+      debug = True;
+      if debug:
+        print "groups: "+str(groups+1)
+        print "sigma: "+str(sigma)
+        for i,c in zip(xrange(-1,len(sigma)+1),sorted(sigma)):
+            print "  "+str(i)+" ("+str(len(c))+") : "+str(c)
+        print "  redundant: "+str(redundant)
+        print "  primes   : "+str(set(c for cubes in sigma for c in cubes) - redundant)+"\n"
       sigma = nsigma
 
-    print "primes: "+str(primes)+"\n"
+    if debug:
+      print "primes: "+str(primes)+"\n"
     return primes
 
   def unate_cover(self, primes, ones):
@@ -289,7 +295,7 @@ def is_power_of_two_or_zero(x):
 def merge(i, j):
   """ Combine two minterms. """
 
-  print "merge: "+str(i)+","+str(j);
+  #print "merge: "+str(i)+","+str(j);
   if i[1] != j[1]:
     return None
   y = i[0] ^ j[0]
@@ -324,14 +330,14 @@ def main():
     variables = int(opts.variables)
 
     qm = QM([chr(code) for code in xrange(ord('A'),ord('A')+variables)])
-    stdout.write("variables: "+str(qm.variables)+'\n')
+    #stdout.write("variables: "+str(qm.variables)+'\n')
     soln = qm.solve(ones, dc)
     if len(soln) == 0:
         stdout.write('contradiction\n')
     elif len(soln) == 1 and soln[0].count('X') == len(soln[0]):
         stdout.write('tautology\n')
     else:
-        stdout.write(' '.join(str(v) for v in soln)+'   f = '+str(qm.get_function(soln[1]))+'\n' )
+        stdout.write(str(sorted(list(soln[1]))))#+'   f = '+str(qm.get_function(soln[1]))+'\n' )
 
 if __name__ == '__main__':
   main()

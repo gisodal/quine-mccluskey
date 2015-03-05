@@ -14,40 +14,49 @@ function CtoM(){
     echo $M
 }
 
-function progs(){
-    $DIR/pylibs/qm.py -v$1 -o$2 | sed 's:^:    :'
-    echo -e "\n--------------------------------------\n"
-    $DIR/bin/qm -v$1 -o$2 | sed 's:^:    :'
+VARS_MIN=3
+VARS_MAX=17
+for ((VARS=3; VARS < VARS_MAX; VARS++)); do
+    echo "===> VARIABLES: $VARS"
+    MODELS=$(echo "2^$VARS" | bc)
+    for ((ones = 2; ones <= $MODELS; ones++)); do
+        echo "  ($ones/$MODELS)"
 
-}
+        C=()
+        for ((i = 0; i < $ones; i++)); do
+            C[$i]=1
+        done
+        for ((i = $ones; i < $MODELS; i++)); do
+            C[$i]=0
+        done
 
-VARS=2
-MODELS=$(echo "2^$VARS" | bc)
-for ((ones = 1; ones <= $MODELS; ones++)); do
-    C=()
-    for ((i = 0; i < $ones; i++)); do
-        C[$i]=1
-    done
-    for ((i = $ones; i < $MODELS; i++)); do
-        C[$i]=0
-    done
+        changed=1
+        while [ $changed -eq 1 ]; do
+            M=$(CtoM ${C[@]})
 
-    changed=1
-    while [ $changed -eq 1 ]; do
-        M=$(CtoM ${C[@]})
-        echo -e "\n\n======================================="
-        echo -e "VARIABLES: $VARS MODELS: $M\n"
-        progs $VARS $M
+            PYOUTPUT=$($DIR/pylibs/qm.py -v$VARS -o$M | sed 's:[][\ ]::g')
+            COUTPUT=$($DIR/bin/qm -v$VARS -o$M)
 
-        changed=0
-        for ((i = 0; i < ${#C[@]}-1; i++)); do
-            j=$(($i+1))
-            if [ ${C[$i]} -eq 1 -a ${C[$j]} -eq 0 ]; then
-                C[$i]=0
-                C[$j]=1
-                changed=1
-                break
+            if [ "$PYOUTPUT" != "$COUTPUT" ]; then
+            #if [ "$(echo -e "$PYOUTPUT"| tail -1)" != "$(echo -e "$COUTPUT"| tail -1)" ]; then
+                echo "=============================================="
+                echo -e "options: -v$VARS -o$M\n"
+                echo -e "    PY: \n$PYOUTPUT"
+                echo -e "----------------------------------------------"
+                echo -e "    C : \n$COUTPUT"
+                echo
             fi
+
+            changed=0
+            for ((i = 0; i < ${#C[@]}-1; i++)); do
+                j=$(($i+1))
+                if [ ${C[$i]} -eq 1 -a ${C[$j]} -eq 0 ]; then
+                    C[$i]=0
+                    C[$j]=1
+                    changed=1
+                    break
+                fi
+            done
         done
     done
 done

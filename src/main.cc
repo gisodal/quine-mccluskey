@@ -45,7 +45,7 @@ int main (int argc, char **argv){
         printf ("Non-option argument %s\n", argv[index]);
 
     if(q.valid())
-        q.compute_primes();
+        q.solve();
     else
         fprintf(stderr, "Input not valid, provide variables (-v #VARIABLES) and models (-o #models)\n");
 
