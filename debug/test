@@ -14,12 +14,12 @@ function CtoM(){
     echo $M
 }
 
-VARS_MIN=3
+VARS_MIN=5
 VARS_MAX=17
-for ((VARS=3; VARS < VARS_MAX; VARS++)); do
+for ((VARS=VARS_MIN; VARS < VARS_MAX; VARS++)); do
     echo "===> VARIABLES: $VARS"
     MODELS=$(echo "2^$VARS" | bc)
-    for ((ones = 2; ones <= $MODELS; ones++)); do
+    for ((ones = 26; ones <= $MODELS; ones++)); do
         echo "  ($ones/$MODELS)"
 
         C=()
@@ -31,14 +31,16 @@ for ((VARS=3; VARS < VARS_MAX; VARS++)); do
         done
 
         changed=1
+        count=0
         while [ $changed -eq 1 ]; do
             M=$(CtoM ${C[@]})
 
             PYOUTPUT=$($DIR/pylibs/qm.py -v$VARS -o$M | sed 's:[][\ ]::g')
             COUTPUT=$($DIR/bin/qm -v$VARS -o$M)
-
-            if [ "$PYOUTPUT" != "$COUTPUT" ]; then
-            #if [ "$(echo -e "$PYOUTPUT"| tail -1)" != "$(echo -e "$COUTPUT"| tail -1)" ]; then
+            printf "    $count\r"
+            count=$((count+1))
+            #if [ "$PYOUTPUT" != "$COUTPUT" ]; then
+            if [ "$(echo -e "$PYOUTPUT"| tail -1)" != "$(echo -e "$COUTPUT"| tail -1)" ]; then
                 echo "=============================================="
                 echo -e "options: -v$VARS -o$M\n"
                 echo -e "    PY: \n$PYOUTPUT"

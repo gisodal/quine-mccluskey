@@ -151,9 +151,9 @@ int qm::compute_primes(){
     unsigned int GROUPS = VARIABLES+1;
     unsigned int PRIMES = 0;
     unsigned int meta_size = (GROUPS*(GROUPS+1))/2;
-    unsigned int cube_size = 2*factorial(VARIABLES);
+    unsigned int cubes_size = 2*factorial(VARIABLES);
 
-    unsigned int total_size = sizeof(cube_t)*2*cube_size + sizeof(uint32_t)*(MODELS+2*meta_size) + sizeof(char)*cube_size;
+    unsigned int total_size = sizeof(cube_t)*2*cubes_size + sizeof(uint32_t)*(MODELS+2*meta_size) + sizeof(char)*cubes_size;
     if(total_size >= 800000){
         fprintf(stderr, "cannot fit > 8Mb onto stack!\n");
         exit(1);
@@ -164,10 +164,10 @@ int qm::compute_primes(){
     uint32_t *size = (uint32_t*) (prime + MODELS);
     uint32_t *offset = size + meta_size;
     char *check = (char*) (offset + meta_size);
-    cube_t *cubes = (cube_t*) (check + cube_size);
+    cube_t *cubes = (cube_t*) (check + cubes_size);
 
     memset(size, 0, sizeof(uint32_t)*meta_size);
-    memset(check, 0, sizeof(char)*cube_size);
+    memset(check, 0, sizeof(char)*cubes_size);
 
 
     // prepare cubes
@@ -188,12 +188,12 @@ int qm::compute_primes(){
     for(unsigned int i = 0; i < ccubes_size; i++){
         uint16_t c = models[i];
         uint32_t index = offset[data[c]] + size[data[c]]++;
-        cubes[index] = {c,0};
+        cubes[index] = {{c,0}};
     }
 
     // quine-mccluskey
     unsigned int groups = GROUPS-1;
-    cube_t *ccubes = cubes, *ncubes = cubes + cube_size;
+    cube_t *ccubes = cubes, *ncubes = cubes + cubes_size;
     while(groups){
         printf("\ngroups: %d\n", groups+1);
         uint32_t *noffset = offset + groups+1;
@@ -212,6 +212,7 @@ int qm::compute_primes(){
         unsigned int ncubes_size = 0;
         for(unsigned int group = 0; group < groups; group++){
             noffset[group] = ncubes_size;
+            nsize[group] = 0;
 
             for(unsigned int i = 0; i < size[group]; i++){
                 unsigned int oi = offset[group]+i;
@@ -226,17 +227,19 @@ int qm::compute_primes(){
                         cube_t &co = ncubes[ncubes_size];
                         co.s[0] = ci.s[0] & cj.s[0];
                         co.s[1] = ci.s[1] | p;
-                        co = {ci.s[0] & cj.s[0], ci.s[1] | p};
                         check[oi] = 1;
                         check[oj] = 1;
 
-                        for(int c = ncubes_size-1; c >= 0; c--){
-                            if(co == ncubes[c])
+                        bool insert = true;
+                        for(int c = ncubes_size-1; c >= 0; c--)
+                            if(co == ncubes[c]){
+                                insert = false;
                                 break;
-                            else if(c == 0){
-                                nsize[group]++;
-                                ncubes_size++;
                             }
+
+                        if(insert){
+                            nsize[group]++;
+                            ncubes_size++;
                         }
                     }
                 }
