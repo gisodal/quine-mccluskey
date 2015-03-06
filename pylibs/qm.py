@@ -90,7 +90,7 @@ class QM:
       return 0,'1'
 
     primes = self.compute_primes(ones + dc)
-    return [0,primes] #self.unate_cover(list(primes), ones)
+    return self.unate_cover(list(primes), ones)
 
   def compute_primes(self, cubes):
     """
@@ -124,10 +124,10 @@ class QM:
       primes |= set(c for cubes in sigma for c in cubes) - redundant
       groups = groups - 1
 
-      debug = True;
+      debug = False;
       if debug:
-        print "groups: "+str(groups+1)
-        print "sigma: "+str(sigma)
+        #print "groups: "+str(groups+1)
+        #print "sigma: "+str(sigma)
         for i,c in zip(xrange(-1,len(sigma)+1),sorted(sigma)):
             print "  "+str(i)+" ("+str(len(c))+") : "+str(c)
         print "  redundant: "+str(redundant)
