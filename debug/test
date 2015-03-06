@@ -1,4 +1,6 @@
 #!/bin/bash
+VARS_MIN=$1
+VARS_MAX=$2
 
 export DIR=$( cd "$( dirname "$0" )/.." && pwd )
 
@@ -82,8 +84,6 @@ function runall(){
 }
 export -f runall;
 
-VARS_MIN=2
-VARS_MAX=18
 for ((VARS=VARS_MIN; VARS < VARS_MAX; VARS++)); do
     echo "===> VARIABLES: $VARS"
     export MODELS=$(echo "2^$VARS" | bc)
