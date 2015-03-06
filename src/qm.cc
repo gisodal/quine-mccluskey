@@ -196,19 +196,21 @@ int qm::compute_primes(){
     cube_t *ccubes = cubes, *ncubes = cubes + cubes_size;
     uint32_t *csize = size, *nsize = size + meta_size;
     uint32_t *coffset = offset, *noffset = offset + meta_size;
+    unsigned int max = 0;
     while(groups){
-        printf("\ngroups: %d\n", groups+1);
+        if(ccubes_size > max)
+            max = ccubes_size;
+        //printf("\ngroups: %d\n", groups+1);
         //uint32_t *noffset = offset + groups+1;
         //uint32_t *nsize = size + groups+1;
 
-        for(uint32_t group = 0; group <= groups; group++){
-            printf("  %d (%d) : ", group, csize[group]);
-            uint32_t of = coffset[group];
-            for(uint32_t i = 0; i < csize[group]; i++)
-                printf("(%d,%d) ", ccubes[of+i].s[0], ccubes[of+i].s[1]);
-            printf("\n");
-        }
-
+        //for(uint32_t group = 0; group <= groups; group++){
+        //    printf("  %d (%d) : ", group, csize[group]);
+        //    uint32_t of = coffset[group];
+        //    for(uint32_t i = 0; i < csize[group]; i++)
+        //        printf("(%d,%d) ", ccubes[of+i].s[0], ccubes[of+i].s[1]);
+        //    printf("\n");
+        //}
 
         unsigned int ncubes_size = 0;
         for(unsigned int group = 0; group < groups; group++){
@@ -248,7 +250,7 @@ int qm::compute_primes(){
         }
 
         // get primes
-        printf("prime %d: ", groups+1);
+        //printf("prime %d: ", groups+1);
         for(unsigned int i = 0; i < ccubes_size; i++){
             if(!check[i]){
                 bool insert = true;
@@ -257,12 +259,12 @@ int qm::compute_primes(){
                         insert = false;
 
                 if(insert){
-                    printf("(%d,%d) ", ccubes[i].s[0],ccubes[i].s[1]);
+          //          printf("(%d,%d) ", ccubes[i].s[0],ccubes[i].s[1]);
                     prime[PRIMES++] = ccubes[i];
                 }
             } else check[i] = 0;
         }
-        printf("\n");
+        //printf("\n");
 
         if(ncubes_size == 0)
             break;
@@ -277,13 +279,19 @@ int qm::compute_primes(){
 
     sort(prime, prime+PRIMES);
 
-    for(uint32_t i = 0; i < PRIMES; i++){
-        if( i > 0)
-            printf(",");
-        uint16_t *p = (uint16_t*) (prime + i);
-        printf("(%d,%d)", p[0], p[1]);
-    }
-    printf("\n");
+    FILE *file;
+    do {
+        file = fopen("output", "a");
+    } while(file == NULL);
+    fprintf(file, "%d,%d,%d,%d\n", VARIABLES,models.size(),max,cubes_size);
+    fclose(file);
+    //for(uint32_t i = 0; i < PRIMES; i++){
+    //    if( i > 0)
+    //        printf(",");
+    //    uint16_t *p = (uint16_t*) (prime + i);
+    //    printf("(%d,%d)", p[0], p[1]);
+    //}
+    //printf("\n");
 
     return 0;
 }
