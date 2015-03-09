@@ -90,7 +90,7 @@ class QM:
       return 0,'1'
 
     primes = self.compute_primes(ones + dc)
-    return self.unate_cover(list(primes), ones)
+    return self.unate_cover(sorted(list(primes)), ones)
 
   def compute_primes(self, cubes):
     """
@@ -159,6 +159,7 @@ class QM:
           column.append(i)
       chart.append(column)
 
+    print "chart: "+str(chart)
     covers = []
     if len(chart) > 0:
       covers = [set([i]) for i in chart[0]]

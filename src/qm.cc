@@ -50,7 +50,7 @@ static inline uint32_t factorial(const uint32_t x) {
 }
 
 static inline const uint32_t* pascal(const uint32_t x){
-    static const uint32_t table[][11] = {
+    static const uint32_t table[][20] = {
         {1},
         {1,1},
         {1,2,1},
@@ -61,7 +61,16 @@ static inline const uint32_t* pascal(const uint32_t x){
         {1,7,21,35,35,21,7,1},
         {1,8,28,56,70,56,28,8,1},
         {1,9,36,84,126,126,84,36,9,1},
-        {1,10,45,120,210,252,210,120,45,10,1}
+        {1,10,45,120,210,252,210,120,45,10,1},
+        {1,11,55,165,330,462,462,330,165,55,11,1},
+        {1,12,66,220,495,792,924,792,495,220,66,12,1},
+        {1,13,78,286,715,1287,1716,1716,1287,715,286,78,13,1},
+        {1,14,91,364,1001,2002,3003,3432,3003,2002,1001,364,91,14,1},
+        {1,15,105,455,1365,3003,5005,6435,6435,5005,3003,1365,455,105,15,1},
+        {1,16,120,560,1820,4368,8008,11440,12870,11440,8008,4368,1820,560,120,16,1},
+        {1,17,136,680,2380,6188,12376,19448,24310,24310,19448,12376,6188,2380,680,136,17,1},
+        {1,18,153,816,3060,8568,18564,31824,43758,48620,43758,31824,18564,8568,3060,816,153,18,1},
+        {1,19,171,969,3876,11628,27132,50388,75582,92378,92378,75582,50388,27132,11628,3876,969,171,19,1}
     };
     return table[x];
 }
@@ -219,22 +228,24 @@ int qm::compute_primes(){
                     unsigned int oj = coffset[group+1]+j;
 
                     cube_t &ci = ccubes[oi], &cj = ccubes[oj];
-                    uint16_t p = ci.s[0] ^ cj.s[0];
-                    if(ci.s[1] == cj.s[1] && is_power_of_two_or_zero(p)){
+                    uint16_t p = ci[0] ^ cj[0];
+                    if(ci[1] == cj[1] && is_power_of_two_or_zero(p)){
                         // merge
 
                         cube_t &co = ncubes[ncubes_size];
-                        co.s[0] = ci.s[0] & cj.s[0];
-                        co.s[1] = ci.s[1] | p;
+                        co[0] = ci[0] & cj[0];
+                        co[1] = ci[1] | p;
                         check[oi] = 1;
                         check[oj] = 1;
 
+                        // check for duplicates
                         bool insert = true;
-                        for(int c = ncubes_size-1; c >= 0; c--)
+                        for(int c = ncubes_size-1; c >= 0; c--){
                             if(co == ncubes[c]){
                                 insert = false;
                                 break;
                             }
+                        }
 
                         if(insert){
                             nsize[group]++;
@@ -255,7 +266,7 @@ int qm::compute_primes(){
                         insert = false;
 
                 if(insert){
-          //          printf("(%d,%d) ", ccubes[i].s[1],ccubes[i].s[1]);
+          //          printf("(%d,%d) ", ccubes[i][1],ccubes[i][1]);
                     prime[PRIMES++] = ccubes[i];
                 }
             } else check[i] = 0;
@@ -275,13 +286,46 @@ int qm::compute_primes(){
 
     sort(prime, prime+PRIMES);
 
-    //for(uint32_t i = 0; i < PRIMES; i++){
-    //    if( i > 0)
-    //        printf(",");
-    //    uint16_t *p = (uint16_t*) (prime + i);
-    //    printf("(%d,%d)", p[0], p[1]);
+    for(uint32_t i = 0; i < PRIMES; i++){
+        if( i > 0)
+            printf(",");
+        uint16_t *p = (uint16_t*) (prime + i);
+        printf("(%d,%d)", p[0], p[1]);
+    }
+    printf("\n");
+
+
+    // make prime chart
+    uint32_t *chart_size = (uint32_t*) (prime+PRIMES);
+    uint32_t *chart_offset = chart_size+models.size();
+    uint32_t *chart = chart_offset+models.size();
+
+    unsigned int CHART_SIZE = 0;
+    for(auto i = 0; i < models.size(); i++){
+        chart_offset[i] = CHART_SIZE;
+        chart_size[i] = 0;
+        for(auto p = 0; p < PRIMES; p++){
+            if((models[i] & (~prime[p][1])) == prime[p][0]){
+                chart[CHART_SIZE++] = p;
+                chart_size[i]++;
+            }
+        }
+    }
+
+    //printf("[");
+    //for(int i = 0; i < models.size(); i++){
+    //    if(i > 0)
+    //        printf(", ");
+    //    printf("[");
+    //    for(int j = 0; j < chart_size[i]; j++){
+    //        if(j > 0)
+    //            printf(", ");
+    //        printf("%d", chart[chart_offset[i]+j]);
+    //    }
+    //    printf("]");
     //}
-    //printf("\n");
+    //printf("]\n");
+
 
     return 0;
 }

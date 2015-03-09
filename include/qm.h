@@ -14,6 +14,9 @@ struct cube {
             return true;
         return false;
     };
+    inline uint16_t& operator[](const int i) {
+        return s[i];
+    };
 };
 
 template <unsigned int s>
