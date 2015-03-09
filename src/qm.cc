@@ -8,6 +8,22 @@
 
 using namespace std;
 
+inline void set_bit(uint16_t &x, uint16_t i){
+    x |= (1<<i);
+}
+
+inline void clear_bit(uint16_t &x, uint16_t i){
+     x &= ~(1<<i);
+}
+
+inline void toggle_bit(uint16_t &x, uint16_t i){
+    x ^= (1 << i);
+}
+
+inline bool is_set_bit(uint16_t x, uint16_t i){
+    return (x >> i) & 1;
+}
+
 static inline uint32_t bitcount(uint32_t x){
     x = x - ((x >> 1) & 0x55555555);
     x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
@@ -298,7 +314,11 @@ int qm::compute_primes(){
     // make prime chart
     uint32_t *chart_size = (uint32_t*) (prime+PRIMES);
     uint32_t *chart_offset = chart_size+models.size();
-    uint32_t *chart = chart_offset+models.size();
+    uint16_t *prime_mask = (uint16_t*) chart_offset+models.size();
+    unsigned int *prime_weight = (unsigned int*) prime_mask+models.size();
+    uint32_t *chart = (uint32_t*) prime_weight+models.size();
+
+    memset((void*)prime_mask,0,sizeof(uint16_t)*models.size()+sizeof(unsigned int)*models.size());
 
     unsigned int CHART_SIZE = 0;
     for(auto i = 0; i < models.size(); i++){
@@ -326,8 +346,64 @@ int qm::compute_primes(){
     //}
     //printf("]\n");
 
+    // identify essential implicates and remove the models they cover
+    uint16_t cover = (uint16_t)(1 << models.size()-1);
+    unsigned int weight = 0;
+    for(auto i = 0; i < models.size(); i++){
+        if(chart_size[i] == 1){
+            unsigned int p = chart[offset[i]];
+            cover &= ~prime[p][1];
+            weight += 1;
+        }
+    }
+
+    // find minimal prime implicate representation
+    if(cover != 0){
+        uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(PRIMES+1)+sizeof(unsigned int)*(PRIMES+1));
+        unsigned int *weights = (unsigned int*) covers + PRIMES+1;
+
+        covers[0] = cover;
+        weights[0] = weight;
+
+        uint16_t stack[100];
+        unsigned int depth = 0;
+        stack[depth] = 0;
+        for(int i = 0; i < models.size(); i++){
+            if(is_set_bit(covers[depth-1],i)){
+                if(stack[depth] != chart_size[i]){
+                    unsigned int p = chart[chart_offset[i]+stack[depth]];
+                    // update cover
+                    cover[depth+1] = cover[depth] & (~prime[p][1]);
+                    // compute weight
+
+                    // determine covering
+
+                    // backtrack or continue
+                }
+            }
+        }
+    }
+
+
+
 
     return 0;
+}
+
+unsigned int qm::complexity(cube_t *primes, unsigned int PRIMES){
+    unsigned int complexity = PRIMES;
+    if(complexity == 1)
+        complexity = 0;
+    uint16_t mask = (1<<variables.size())-1
+    for(unsigned int p = 0; p < PRIMES; p++) minterm in minterms:
+      unsigned int masked = ~primes[1] & mask;
+      unsigned int term_complexity = bitcount(masked);
+      if(term_complexity == 1)
+            term_complexity = 0
+      complexity += term_complexity
+      complexity += bitcount(~primes[0] & masked)
+
+    return complexity;
 }
 
 void qm::uniq(cube_t*, unsigned int){

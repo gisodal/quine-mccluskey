@@ -159,7 +159,6 @@ class QM:
           column.append(i)
       chart.append(column)
 
-    print "chart: "+str(chart)
     covers = []
     if len(chart) > 0:
       covers = [set([i]) for i in chart[0]]
