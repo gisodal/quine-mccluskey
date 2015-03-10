@@ -376,66 +376,71 @@ int qm::reduce(void *data, unsigned int PRIMES){
     // identify essential implicates and remove the models they cover
     uint16_t COVER = (uint16_t)((1 << models.size())-1), cover = COVER;
     unsigned int weight = 0;
+    printf("essential: ");
     for(auto i = 0; i < models.size() && cover; i++){
         if(chart_size[i] == 1){
             unsigned int p = chart[chart_offset[i]];
+            printf("(%d,%d) ", prime[p][0], prime[p][1]);
             cover &= ~prime_mask[p];
             weight += 1;
         }
     }
+    printf("\n");
 
     // find minimal prime implicate representation
     if(cover != 0){
-        uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(PRIMES+1)+sizeof(unsigned int)*(PRIMES+1));
+        uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(models.size()+1)+sizeof(unsigned int)*(PRIMES+1));
         unsigned int *weights = (unsigned int*) covers + PRIMES+1;
 
         covers[0] = cover;
         weights[0] = weight;
 
         uint16_t stack[100];
-        unsigned int depth = 1;
+        unsigned int depth = 0;
         unsigned int i = 0;
         stack[depth] = 0;
         int state = 1;
-        while(depth){
-            if(is_set_bit(covers[depth-1],i)){
+        int count = 0;
+        while(true){
+            if(is_set_bit(covers[depth],i)){
                 do {
                     if(stack[depth] != chart_size[i]){
                         unsigned int p = chart[chart_offset[i]+stack[depth]];
-                        stack[depth]++;
                         state = 1;
 
                         // compute weight
-                        cover = ~prime[p][1] & COVER;
+                        cover = (~prime_mask[p]) & COVER;
                         weight = ((weight=bitcount(cover))==1?0:weight);
                         weight += bitcount (prime_mask[p] & cover);
                         weights[depth] = weights[depth-1] + weight;
 
                         // update cover
-                        covers[depth] = covers[depth-1] & (~prime[p][1]);
+                        covers[depth+1] = covers[depth] & (~prime_mask[p]);
 
                         // determine covering
-                        if(covers[depth] == 0){
+                        if(covers[depth+1] == 0){
                             // go through more primes on current depth
                             state = 0;
 
                             int d = 0,j=0;
-                            while(j++, j <= models.size()){
+                            printf("%d: ", count++);
+                            while(d <= depth){
                                 if(is_set_bit(covers[d],j)){
                                     unsigned int p = chart[chart_offset[j]+stack[d]];
                                     d++;
-                                    printf("(%d,%d), ", prime[p][0], prime[p][1]);
+                                    printf("(%d,%d) ", prime[p][0], prime[p][1]);
                                 }
+                                j++;
                             }
                             printf("\n");
 
                         } else { // acquire more primes
                             stack[depth+1] = 0;
                         }
-
+                        stack[depth]++;
                     } else {
                         state = -1;
-                        stack[depth] = 0;
+                        //stack[depth] = 0;
                         break;
                     }
                 } while(!state);
