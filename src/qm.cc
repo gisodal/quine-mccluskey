@@ -170,7 +170,9 @@ bool qm::valid(){
     return false;
 }
 
-int qm::compute_primes(){
+int qm::quine_mccluskey(void *data){
+    if(!data)
+        return 0;
     unsigned int VARIABLES = variables.size();
     unsigned int MODELS = pow2(VARIABLES);
     unsigned int GROUPS = VARIABLES+1;
@@ -178,13 +180,6 @@ int qm::compute_primes(){
     unsigned int meta_size = GROUPS;
     unsigned int cubes_size = 2*factorial(VARIABLES);
 
-    unsigned int total_size = sizeof(cube_t)*2*cubes_size + sizeof(uint32_t)*(MODELS+2*2*meta_size) + sizeof(char)*cubes_size;
-    if(total_size >= 800000){
-        fprintf(stderr, "cannot fit > 8Mb onto stack!\n");
-        exit(1);
-    }
-
-    uint32_t *data = (uint32_t*) alloca(total_size);
     cube_t *prime = (cube_t*) data;
     uint32_t *size = (uint32_t*) (prime + MODELS);
     uint32_t *offset = size + 2*meta_size;
@@ -195,11 +190,12 @@ int qm::compute_primes(){
     memset(check, 0, sizeof(char)*cubes_size);
 
     // prepare cubes
+    uint32_t *model_to_group = (uint32_t*) data;
     unsigned int ccubes_size = models.size();
     for(unsigned int i = 0; i < ccubes_size; i++){
         uint16_t c = models[i];
         uint32_t group = bitcount(c);
-        data[c] = group;
+        model_to_group[c] = group;
         size[group]++;
     }
 
@@ -211,7 +207,7 @@ int qm::compute_primes(){
 
     for(unsigned int i = 0; i < ccubes_size; i++){
         uint16_t c = models[i];
-        uint32_t index = offset[data[c]] + size[data[c]]++;
+        uint32_t index = offset[model_to_group[c]] + size[model_to_group[c]]++;
         cubes[index] = {{c,0}};
     }
 
@@ -310,49 +306,80 @@ int qm::compute_primes(){
     }
     printf("\n");
 
+    return PRIMES;
+}
 
-    // make prime chart
+size_t qm::required_size(){
+    unsigned int VARIABLES = variables.size();
+    unsigned int MODELS = pow2(VARIABLES);
+    unsigned int GROUPS = VARIABLES+1;
+    unsigned int PRIMES = 0;
+    unsigned int meta_size = GROUPS;
+    unsigned int cubes_size = 2*factorial(VARIABLES);
+
+    unsigned int total_size = sizeof(cube_t)*2*cubes_size + sizeof(uint32_t)*(MODELS+2*2*meta_size) + sizeof(char)*cubes_size;
+    if(total_size >= 800000){
+        fprintf(stderr, "cannot fit > 8Mb onto stack!\n");
+        exit(1);
+    }
+    return total_size;
+}
+
+int qm::compute_primes(){
+    void *data = alloca(required_size());
+    unsigned int PRIMES, CANONICAL;
+
+    PRIMES = quine_mccluskey((uint32_t*) data);
+    CANONICAL = reduce((uint32_t*) data,PRIMES);
+
+    return 0;
+}
+
+
+int qm::reduce(void *data, unsigned int PRIMES){
+    cube_t* prime = (cube_t*) data;
     uint32_t *chart_size = (uint32_t*) (prime+PRIMES);
     uint32_t *chart_offset = chart_size+models.size();
-    uint16_t *prime_mask = (uint16_t*) chart_offset+models.size();
-    unsigned int *prime_weight = (unsigned int*) prime_mask+models.size();
-    uint32_t *chart = (uint32_t*) prime_weight+models.size();
-
+    uint16_t *prime_mask = (uint16_t*) (chart_offset+models.size());
+    unsigned int *prime_weight = (unsigned int*) (prime_mask+models.size()*3);
+    uint32_t *chart = (uint32_t*) (prime_weight+models.size());
     memset((void*)prime_mask,0,sizeof(uint16_t)*models.size()+sizeof(unsigned int)*models.size());
 
+    // make prime chart
     unsigned int CHART_SIZE = 0;
     for(auto i = 0; i < models.size(); i++){
         chart_offset[i] = CHART_SIZE;
         chart_size[i] = 0;
         for(auto p = 0; p < PRIMES; p++){
             if((models[i] & (~prime[p][1])) == prime[p][0]){
+                prime_mask[p] |= 1<<i;
                 chart[CHART_SIZE++] = p;
                 chart_size[i]++;
             }
         }
     }
 
-    //printf("[");
-    //for(int i = 0; i < models.size(); i++){
-    //    if(i > 0)
-    //        printf(", ");
-    //    printf("[");
-    //    for(int j = 0; j < chart_size[i]; j++){
-    //        if(j > 0)
-    //            printf(", ");
-    //        printf("%d", chart[chart_offset[i]+j]);
-    //    }
-    //    printf("]");
-    //}
-    //printf("]\n");
+    printf("[");
+    for(int i = 0; i < models.size(); i++){
+        if(i > 0)
+            printf(", ");
+        printf("[");
+        for(int j = 0; j < chart_size[i]; j++){
+            if(j > 0)
+                printf(", ");
+            printf("%d", chart[chart_offset[i]+j]);
+        }
+        printf("]");
+    }
+    printf("]\n");
 
     // identify essential implicates and remove the models they cover
-    uint16_t cover = (uint16_t)(1 << models.size()-1);
+    uint16_t COVER = (uint16_t)((1 << models.size())-1), cover = COVER;
     unsigned int weight = 0;
-    for(auto i = 0; i < models.size(); i++){
+    for(auto i = 0; i < models.size() && cover; i++){
         if(chart_size[i] == 1){
-            unsigned int p = chart[offset[i]];
-            cover &= ~prime[p][1];
+            unsigned int p = chart[chart_offset[i]];
+            cover &= ~prime_mask[p];
             weight += 1;
         }
     }
@@ -366,49 +393,109 @@ int qm::compute_primes(){
         weights[0] = weight;
 
         uint16_t stack[100];
-        unsigned int depth = 0;
+        unsigned int depth = 1;
+        unsigned int i = 0;
         stack[depth] = 0;
-        for(int i = 0; i < models.size(); i++){
+        int state = 1;
+        while(depth){
             if(is_set_bit(covers[depth-1],i)){
-                if(stack[depth] != chart_size[i]){
-                    unsigned int p = chart[chart_offset[i]+stack[depth]];
-                    // update cover
-                    cover[depth+1] = cover[depth] & (~prime[p][1]);
-                    // compute weight
+                do {
+                    if(stack[depth] != chart_size[i]){
+                        unsigned int p = chart[chart_offset[i]+stack[depth]];
+                        stack[depth]++;
+                        state = 1;
 
-                    // determine covering
+                        // compute weight
+                        cover = ~prime[p][1] & COVER;
+                        weight = ((weight=bitcount(cover))==1?0:weight);
+                        weight += bitcount (prime_mask[p] & cover);
+                        weights[depth] = weights[depth-1] + weight;
 
-                    // backtrack or continue
-                }
+                        // update cover
+                        covers[depth] = covers[depth-1] & (~prime[p][1]);
+
+                        // determine covering
+                        if(covers[depth] == 0){
+                            // go through more primes on current depth
+                            state = 0;
+
+                            int d = 0,j=0;
+                            while(j++, j <= models.size()){
+                                if(is_set_bit(covers[d],j)){
+                                    unsigned int p = chart[chart_offset[j]+stack[d]];
+                                    d++;
+                                    printf("(%d,%d), ", prime[p][0], prime[p][1]);
+                                }
+                            }
+                            printf("\n");
+
+                        } else { // acquire more primes
+                            stack[depth+1] = 0;
+                        }
+
+                    } else {
+                        state = -1;
+                        stack[depth] = 0;
+                        break;
+                    }
+                } while(!state);
+                depth += state;
             }
+            i += state;
         }
     }
 
 
+    //int *max = (int*) malloc(sizeof(int)*(m+1));
+    //int *ctr = (int*) malloc(sizeof(int)*(m+1));
+    //int *variable = (int*) malloc(sizeof(int)*(m+1));
+    //for(unsigned int j = 0; j < m; j++){
+    //    variable[j] = bn->get_parent(i)[j];
+    //    max[j] = bn->states[variable[j]];
+    //    ctr[j] = 0;
+    //}
+    //variable[m] = i;
+    //max[m] = bn->states[i];
+    //ctr[m] = 0;
 
+    //int q = 0;
+    //while(true){
+    //    clause_to_variable.push_back(i);
+    //    clause_to_probability.push_back(p++);
+    //    probability_to_weight.push_back(bn->cpt[bn->cpt_offset[i]+q++]);
+    //    uint32_t cid = expr.clauses.size();
+    //    expr.clauses.resize(cid+1);
+    //    clause_t &c = expr.clauses.back();
+    //    //c.weight = bn->cpt[bn->cpt_offset[i]+p];
+    //    for(int i = 0; i <= m; i++){
+    //        uint32_t lid = v_to_l(variable[i],ctr[i]);
+    //        c.literals.push_back(lid);
+    //        c.negated.push_back(true);
 
+    //        literal_t &l = expr.literals[lid];
+    //        l.clauses.push_back(cid);
+    //        l.negated.push_back(true);
+    //    }
+
+    //    if(ctr[m] < max[m]-1)
+    //        ctr[m]++;
+    //    else {
+    //        for(int q = m-1; q >= 0; q--){
+    //            if(ctr[q] < max[q]-1){
+    //                ctr[q]++;
+    //                for(int r = q+1; r <= m; r++)
+    //                    ctr[r] = 0;
+    //                break;
+    //            }
+    //        }
+    //        if(ctr[m] != 0)
+    //            break;
+    //    }
+    //}
     return 0;
-}
-
-unsigned int qm::complexity(cube_t *primes, unsigned int PRIMES){
-    unsigned int complexity = PRIMES;
-    if(complexity == 1)
-        complexity = 0;
-    uint16_t mask = (1<<variables.size())-1
-    for(unsigned int p = 0; p < PRIMES; p++) minterm in minterms:
-      unsigned int masked = ~primes[1] & mask;
-      unsigned int term_complexity = bitcount(masked);
-      if(term_complexity == 1)
-            term_complexity = 0
-      complexity += term_complexity
-      complexity += bitcount(~primes[0] & masked)
-
-    return complexity;
 }
 
 void qm::uniq(cube_t*, unsigned int){
 
 }
-
-
 

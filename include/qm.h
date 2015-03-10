@@ -1,6 +1,6 @@
 #include <vector>
 #include <stdint.h>
-
+#include <stddef.h>
 struct cube {
     uint16_t s[2];
     inline bool operator==(const cube &c) const {
@@ -43,6 +43,9 @@ class qm {
         void clear();
         int solve();
 
+        int quine_mccluskey(void*);
+        int reduce(void*, unsigned int);
+        size_t required_size();
         int compute_primes();
         int unate_cover();
         bool valid();
