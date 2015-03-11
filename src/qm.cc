@@ -315,7 +315,7 @@ int qm::compute_primes(){
     return CANONICAL;
 }
 
-inline unsigned int qm::get_weight(cube_t &c, uint16_t &COVER){
+inline unsigned int qm::get_weight(cube_t &c, const uint16_t &COVER){
     uint16_t cover = (~c[1]) & COVER;
     unsigned int weight;
     return ((weight=bitcount(cover))==1?0:weight) + bitcount((~c[0]) & cover);
@@ -346,7 +346,8 @@ int qm::reduce(void *data, unsigned int PRIMES){
     }
 
     // identify essential implicates and remove the models they cover
-    uint16_t COVER = (uint16_t)((1 << models.size())-1), cover = COVER;
+    const uint16_t COVER = (uint16_t)((1 << models.size())-1);
+    uint16_t cover = COVER;
     uint16_t *canonical = (uint16_t*) alloca(sizeof(uint16_t)*PRIMES);
     unsigned int essentials = 0;
 
@@ -359,7 +360,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
     }
 
     // find minimal prime implicate representation
-    unsigned int canonical_size = 0;
+    unsigned int canonical_size = essentials;
     unsigned int min_weight = ~0;
     if(cover != 0){
         uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(models.size())+sizeof(unsigned int)*(PRIMES));

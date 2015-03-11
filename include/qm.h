@@ -43,7 +43,7 @@ class qm {
         void clear();
         int solve();
 
-        inline unsigned int get_weight(cube_t&, uint16_t&);
+        inline unsigned int get_weight(cube_t&, const uint16_t&);
         int quine_mccluskey(void*);
         int reduce(void*, unsigned int);
         size_t required_size();
