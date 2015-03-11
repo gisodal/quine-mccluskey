@@ -24,6 +24,10 @@ inline bool is_set_bit(uint16_t x, uint16_t i){
     return (x >> i) & 1;
 }
 
+inline void set_min_value(unsigned int &x, unsigned int y){
+    x = y ^ ((x ^ y) & -(x < y));
+}
+
 static inline uint32_t bitcount(uint32_t x){
     x = x - ((x >> 1) & 0x55555555);
     x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
@@ -37,6 +41,9 @@ static inline bool is_power_of_two_or_zero(const uint32_t x){
 static inline bool is_power_of_two_or_zero(const uint16_t x){
     return (x & (x - 1)) == 0;
 }
+
+
+
 
 static inline uint32_t log2(const uint32_t x) { // for x86 and x86-64 architecture
     uint32_t y;
@@ -217,18 +224,6 @@ int qm::quine_mccluskey(void *data){
     uint32_t *csize = size, *nsize = size + meta_size;
     uint32_t *coffset = offset, *noffset = offset + meta_size;
     while(groups){
-        //printf("\ngroups: %d\n", groups+1);
-        //uint32_t *noffset = offset + groups+1;
-        //uint32_t *nsize = size + groups+1;
-
-        //for(uint32_t group = 0; group <= groups; group++){
-        //    printf("  %d (%d) : ", group, csize[group]);
-        //    uint32_t of = coffset[group];
-        //    for(uint32_t i = 0; i < csize[group]; i++)
-        //        printf("(%d,%d) ", ccubes[of+i].s[0], ccubes[of+i].s[1]);
-        //    printf("\n");
-        //}
-
         unsigned int ncubes_size = 0;
         for(unsigned int group = 0; group < groups; group++){
             noffset[group] = ncubes_size;
@@ -269,7 +264,6 @@ int qm::quine_mccluskey(void *data){
         }
 
         // get primes
-        //printf("prime %d: ", groups+1);
         for(unsigned int i = 0; i < ccubes_size; i++){
             if(!check[i]){
                 bool insert = true;
@@ -277,13 +271,10 @@ int qm::quine_mccluskey(void *data){
                     if(prime[p] == ccubes[i])
                         insert = false;
 
-                if(insert){
-          //          printf("(%d,%d) ", ccubes[i][1],ccubes[i][1]);
+                if(insert)
                     prime[PRIMES++] = ccubes[i];
-                }
             } else check[i] = 0;
         }
-        //printf("\n");
 
         if(ncubes_size == 0)
             break;
@@ -296,16 +287,6 @@ int qm::quine_mccluskey(void *data){
         groups--;
     }
 
-    sort(prime, prime+PRIMES);
-
-    for(uint32_t i = 0; i < PRIMES; i++){
-        if( i > 0)
-            printf(",");
-        uint16_t *p = (uint16_t*) (prime + i);
-        printf("(%d,%d)", p[0], p[1]);
-    }
-    printf("\n");
-
     return PRIMES;
 }
 
@@ -313,7 +294,6 @@ size_t qm::required_size(){
     unsigned int VARIABLES = variables.size();
     unsigned int MODELS = pow2(VARIABLES);
     unsigned int GROUPS = VARIABLES+1;
-    unsigned int PRIMES = 0;
     unsigned int meta_size = GROUPS;
     unsigned int cubes_size = 2*factorial(VARIABLES);
 
@@ -332,7 +312,13 @@ int qm::compute_primes(){
     PRIMES = quine_mccluskey((uint32_t*) data);
     CANONICAL = reduce((uint32_t*) data,PRIMES);
 
-    return 0;
+    return CANONICAL;
+}
+
+inline unsigned int qm::get_weight(cube_t &c, uint16_t &COVER){
+    uint16_t cover = (~c[1]) & COVER;
+    unsigned int weight;
+    return ((weight=bitcount(cover))==1?0:weight) + bitcount((~c[0]) & cover);
 }
 
 
@@ -347,10 +333,10 @@ int qm::reduce(void *data, unsigned int PRIMES){
 
     // make prime chart
     unsigned int CHART_SIZE = 0;
-    for(auto i = 0; i < models.size(); i++){
+    for(unsigned int i = 0; i < models.size(); i++){
         chart_offset[i] = CHART_SIZE;
         chart_size[i] = 0;
-        for(auto p = 0; p < PRIMES; p++){
+        for(unsigned int p = 0; p < PRIMES; p++){
             if((models[i] & (~prime[p][1])) == prime[p][0]){
                 prime_mask[p] |= 1<<i;
                 chart[CHART_SIZE++] = p;
@@ -359,144 +345,93 @@ int qm::reduce(void *data, unsigned int PRIMES){
         }
     }
 
+    // identify essential implicates and remove the models they cover
+    uint16_t COVER = (uint16_t)((1 << models.size())-1), cover = COVER;
+    uint16_t *canonical = (uint16_t*) alloca(sizeof(uint16_t)*PRIMES);
+    unsigned int essentials = 0;
+
+    for(unsigned int i = 0; i < models.size() && cover; i++){
+        if(chart_size[i] == 1){
+            unsigned int p = chart[chart_offset[i]];
+            cover &= ~prime_mask[p];
+            canonical[essentials++] = p;
+        }
+    }
+
+    // find minimal prime implicate representation
+    unsigned int canonical_size = 0;
+    unsigned int min_weight = ~0;
+    if(cover != 0){
+        uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(models.size())+sizeof(unsigned int)*(PRIMES));
+        unsigned int *weights = (unsigned int*) covers + PRIMES;
+
+        covers[0] = cover;
+        weights[0] = essentials; // ignores weight of common essential primes
+
+        cube_t stack[100];
+        int depth = 0;
+        int i = 0;
+        stack[depth][0] = 0;
+        while(depth >= 0){
+            if(is_set_bit(covers[depth],i)){
+                while(true){
+                    if(stack[depth][0] < chart_size[i]){
+                        unsigned int p = chart[chart_offset[i]+stack[depth][0]];
+                        stack[depth][1] = i;
+
+                        // compute weight
+                        weights[depth+1] = weights[depth] + get_weight(prime[p], COVER) + 1;
+
+                        // prune
+                        if(weights[depth+1] >= min_weight)
+                            stack[depth][0]++;
+                        else {
+                            // update cover
+                            cover = covers[depth] & (~prime_mask[p]);
+
+                            // determine covering
+                            if(cover == 0){
+                                // go through more primes on current depth
+                                //unsigned int weight = depth+essentials+1;
+                                //set_min_value(min_weight, weights[depth+1] + (weight==1?-1:0));a
+                                canonical_size = depth+essentials+1;
+                                min_weight = weights[depth+1] - (canonical_size==1?0:1);
+
+                                for(int d = 0; d <= depth; d++){
+                                    unsigned int p = chart[chart_offset[stack[d][1]]+stack[d][0]];
+                                    canonical[essentials+d] = p;
+                                }
+
+                                stack[depth][0]++;
+                                continue;
+                            } else { // acquire more primes
+                                depth++;
+                                covers[depth] = cover;
+                                stack[depth][0] = 0;
+                            }
+                        }
+                    } else {
+                        // if depth < 0, quit!
+                        depth--;
+                        stack[depth][0]++;
+                        i = stack[depth][1]-1;
+                    }
+                    break;
+                }
+            }
+            i++;
+        }
+    }
+
+    sort(canonical, canonical+canonical_size);
     printf("[");
-    for(int i = 0; i < models.size(); i++){
+    for(unsigned int i = 0; i < canonical_size; i++){
         if(i > 0)
             printf(", ");
-        printf("[");
-        for(int j = 0; j < chart_size[i]; j++){
-            if(j > 0)
-                printf(", ");
-            printf("%d", chart[chart_offset[i]+j]);
-        }
-        printf("]");
+        printf("(%d, %d)", prime[canonical[i]][0], prime[canonical[i]][1]);
     }
     printf("]\n");
 
-    // identify essential implicates and remove the models they cover
-    uint16_t COVER = (uint16_t)((1 << models.size())-1), cover = COVER;
-    unsigned int weight = 0;
-    printf("essential: ");
-    for(auto i = 0; i < models.size() && cover; i++){
-        if(chart_size[i] == 1){
-            unsigned int p = chart[chart_offset[i]];
-            printf("(%d,%d) ", prime[p][0], prime[p][1]);
-            cover &= ~prime_mask[p];
-            weight += 1;
-        }
-    }
-    printf("\n");
-
-    // find minimal prime implicate representation
-    if(cover != 0){
-        uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(models.size()+1)+sizeof(unsigned int)*(PRIMES+1));
-        unsigned int *weights = (unsigned int*) covers + PRIMES+1;
-
-        covers[0] = cover;
-        weights[0] = weight;
-
-        uint16_t stack[100];
-        unsigned int depth = 0;
-        unsigned int i = 0;
-        stack[depth] = 0;
-        int state = 1;
-        int count = 0;
-        while(true){
-            if(is_set_bit(covers[depth],i)){
-                do {
-                    if(stack[depth] != chart_size[i]){
-                        unsigned int p = chart[chart_offset[i]+stack[depth]];
-                        state = 1;
-
-                        // compute weight
-                        cover = (~prime_mask[p]) & COVER;
-                        weight = ((weight=bitcount(cover))==1?0:weight);
-                        weight += bitcount (prime_mask[p] & cover);
-                        weights[depth] = weights[depth-1] + weight;
-
-                        // update cover
-                        covers[depth+1] = covers[depth] & (~prime_mask[p]);
-
-                        // determine covering
-                        if(covers[depth+1] == 0){
-                            // go through more primes on current depth
-                            state = 0;
-
-                            int d = 0,j=0;
-                            printf("%d: ", count++);
-                            while(d <= depth){
-                                if(is_set_bit(covers[d],j)){
-                                    unsigned int p = chart[chart_offset[j]+stack[d]];
-                                    d++;
-                                    printf("(%d,%d) ", prime[p][0], prime[p][1]);
-                                }
-                                j++;
-                            }
-                            printf("\n");
-
-                        } else { // acquire more primes
-                            stack[depth+1] = 0;
-                        }
-                        stack[depth]++;
-                    } else {
-                        state = -1;
-                        //stack[depth] = 0;
-                        break;
-                    }
-                } while(!state);
-                depth += state;
-            }
-            i += state;
-        }
-    }
-
-
-    //int *max = (int*) malloc(sizeof(int)*(m+1));
-    //int *ctr = (int*) malloc(sizeof(int)*(m+1));
-    //int *variable = (int*) malloc(sizeof(int)*(m+1));
-    //for(unsigned int j = 0; j < m; j++){
-    //    variable[j] = bn->get_parent(i)[j];
-    //    max[j] = bn->states[variable[j]];
-    //    ctr[j] = 0;
-    //}
-    //variable[m] = i;
-    //max[m] = bn->states[i];
-    //ctr[m] = 0;
-
-    //int q = 0;
-    //while(true){
-    //    clause_to_variable.push_back(i);
-    //    clause_to_probability.push_back(p++);
-    //    probability_to_weight.push_back(bn->cpt[bn->cpt_offset[i]+q++]);
-    //    uint32_t cid = expr.clauses.size();
-    //    expr.clauses.resize(cid+1);
-    //    clause_t &c = expr.clauses.back();
-    //    //c.weight = bn->cpt[bn->cpt_offset[i]+p];
-    //    for(int i = 0; i <= m; i++){
-    //        uint32_t lid = v_to_l(variable[i],ctr[i]);
-    //        c.literals.push_back(lid);
-    //        c.negated.push_back(true);
-
-    //        literal_t &l = expr.literals[lid];
-    //        l.clauses.push_back(cid);
-    //        l.negated.push_back(true);
-    //    }
-
-    //    if(ctr[m] < max[m]-1)
-    //        ctr[m]++;
-    //    else {
-    //        for(int q = m-1; q >= 0; q--){
-    //            if(ctr[q] < max[q]-1){
-    //                ctr[q]++;
-    //                for(int r = q+1; r <= m; r++)
-    //                    ctr[r] = 0;
-    //                break;
-    //            }
-    //        }
-    //        if(ctr[m] != 0)
-    //            break;
-    //    }
-    //}
     return 0;
 }
 
