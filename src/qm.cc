@@ -348,26 +348,34 @@ int qm::reduce(void *data, unsigned int PRIMES){
     // identify essential implicates and remove the models they cover
     const uint16_t COVER = (uint16_t)((1 << models.size())-1);
     uint16_t cover = COVER;
-    uint16_t *canonical = (uint16_t*) alloca(sizeof(uint16_t)*PRIMES);
-    unsigned int essentials = 0;
-
+    uint16_t *essentials = (uint16_t*) alloca(sizeof(uint16_t)*PRIMES);
+    unsigned int essential_size = 0;
     for(unsigned int i = 0; i < models.size() && cover; i++){
         if(chart_size[i] == 1){
             unsigned int p = chart[chart_offset[i]];
             cover &= ~prime_mask[p];
-            canonical[essentials++] = p;
+            essentials[essential_size++] = p;
+
+            // verify uniqueness
+            for(int j = essential_size-2; j >= 0; j--){
+                if(essentials[j] == p){
+                    essential_size--;
+                    break;
+                }
+            }
         }
     }
 
     // find minimal prime implicate representation
-    unsigned int canonical_size = essentials;
+    unsigned int non_essential_size = 0;
     unsigned int min_weight = ~0;
     if(cover != 0){
+        uint16_t *non_essentials = essentials+essential_size;
         uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(models.size())+sizeof(unsigned int)*(PRIMES));
         unsigned int *weights = (unsigned int*) covers + PRIMES;
 
         covers[0] = cover;
-        weights[0] = essentials; // ignores weight of common essential primes
+        weights[0] = essential_size; // ignores weight of common essential primes
 
         cube_t stack[100];
         int depth = 0;
@@ -395,12 +403,12 @@ int qm::reduce(void *data, unsigned int PRIMES){
                                 // go through more primes on current depth
                                 //unsigned int weight = depth+essentials+1;
                                 //set_min_value(min_weight, weights[depth+1] + (weight==1?-1:0));a
-                                canonical_size = depth+essentials+1;
-                                min_weight = weights[depth+1] - (canonical_size==1?0:1);
+                                non_essential_size = depth+1;
+                                min_weight = weights[depth+1] - (non_essential_size+essential_size==1?0:1);
 
                                 for(int d = 0; d <= depth; d++){
                                     unsigned int p = chart[chart_offset[stack[d][1]]+stack[d][0]];
-                                    canonical[essentials+d] = p;
+                                    non_essentials[d] = p;
                                 }
 
                                 stack[depth][0]++;
@@ -424,14 +432,13 @@ int qm::reduce(void *data, unsigned int PRIMES){
         }
     }
 
-    sort(canonical, canonical+canonical_size);
-    printf("[");
-    for(unsigned int i = 0; i < canonical_size; i++){
+    sort(essentials, essentials+essential_size+non_essential_size);
+    for(unsigned int i = 0; i < essential_size+non_essential_size; i++){
         if(i > 0)
-            printf(", ");
-        printf("(%d, %d)", prime[canonical[i]][0], prime[canonical[i]][1]);
+            printf(",");
+        printf("(%d,%d)", prime[essentials[i]][0], prime[essentials[i]][1]);
     }
-    printf("]\n");
+    printf("\n");
 
     return 0;
 }
