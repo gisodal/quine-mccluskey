@@ -314,12 +314,17 @@ int qm::compute_primes(){
 
     return CANONICAL;
 }
-
-inline unsigned int qm::get_weight(cube_t &c, const uint16_t &COVER){
-    uint16_t cover = (~c[1]) & COVER;
-    unsigned int weight;
-    return ((weight=bitcount(cover))==1?0:weight) + bitcount((~c[0]) & cover);
+inline unsigned int qm::get_weight(cube_t &c, const uint16_t &MASK){
+    uint16_t cover = (~c[1]) & MASK;
+    unsigned int weight = bitcount(cover);
+    weight = (weight==1?0:weight);
+    weight += bitcount((~c[0]) & cover);
+    return weight;
+    // uint16_t cover = (~c[1]) & COVER;
+    // unsigned int weight;
+    // return ((weight=bitcount(cover))==1?0:weight) + bitcount((~c[0]) & cover);
 }
+
 
 
 int qm::reduce(void *data, unsigned int PRIMES){
@@ -349,21 +354,28 @@ int qm::reduce(void *data, unsigned int PRIMES){
 
     // identify essential implicates and remove the models they cover
     const uint16_t COVER = (uint16_t)((1 << MODELS)-1);
+    const uint16_t MASK = (uint16_t)((1 << variables.size())-1);
     uint16_t cover = COVER;
     uint16_t *essentials = (uint16_t*) alloca(sizeof(uint16_t)*PRIMES);
     unsigned int essential_size = 0;
+    unsigned weight = 0;
     for(unsigned int i = 0; i < MODELS && cover; i++){
         if(chart_size[i] == 1){
             unsigned int p = chart[chart_offset[i]];
-            cover &= ~prime_mask[p];
-            essentials[essential_size++] = p;
 
             // verify uniqueness
-            for(int j = essential_size-2; j >= 0; j--){
+            bool insert = true;
+            for(int j = essential_size-1; j >= 0; j--){
                 if(essentials[j] == p){
-                    essential_size--;
+                    insert = false;
                     break;
                 }
+            }
+
+            if(insert){
+                cover &= ~prime_mask[p];
+                essentials[essential_size++] = p;
+                weight += 1 + get_weight(prime[p],MASK);
             }
         }
     }
@@ -377,7 +389,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
         unsigned int *weights = (unsigned int*) covers + PRIMES;
 
         covers[0] = cover;
-        weights[0] = essential_size; // ignores weight of common essential primes
+        weights[0] = weight;
 
         cube_t stack[100];
         int depth = 0;
@@ -391,10 +403,10 @@ int qm::reduce(void *data, unsigned int PRIMES){
                         stack[depth][1] = i;
 
                         // compute weight
-                        weights[depth+1] = weights[depth] + get_weight(prime[p], COVER) + 1;
+                        weights[depth+1] = weights[depth] + get_weight(prime[p], MASK) + 1;
 
                         // prune
-                        if(weights[depth+1] >= min_weight){
+                        if(weights[depth+1] > min_weight){
                             stack[depth][0]++;
                             i--;
                         } else {
@@ -407,12 +419,17 @@ int qm::reduce(void *data, unsigned int PRIMES){
                                 //unsigned int weight = depth+essentials+1;
                                 //set_min_value(min_weight, weights[depth+1] + (weight==1?-1:0));a
                                 non_essential_size = depth+1;
-                                min_weight = weights[depth+1] - (non_essential_size+essential_size==1?0:1);
+                                unsigned int tmp_weight = weights[depth+1] - (non_essential_size+essential_size==1?1:0);
 
-                                for(int d = 0; d <= depth; d++){
-                                    unsigned int p = chart[chart_offset[stack[d][1]]+stack[d][0]];
-                                    non_essentials[d] = p;
+                                if(tmp_weight < min_weight) {
+                                    for(int d = 0; d <= depth; d++){
+                                        unsigned int p = chart[chart_offset[stack[d][1]]+stack[d][0]];
+                                        non_essentials[d] = p;
+                                    }
+                                    min_weight = tmp_weight;
                                 }
+
+
 
                                 stack[depth][0]++;
                                 continue;
@@ -433,6 +450,10 @@ int qm::reduce(void *data, unsigned int PRIMES){
             }
             i++;
         }
+    }
+
+    if(min_weight == (unsigned int) ~0){
+        min_weight = (essential_size+non_essential_size==1?weight-1:weight);
     }
 
     sort(essentials, essentials+essential_size+non_essential_size);

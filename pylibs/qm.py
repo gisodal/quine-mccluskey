@@ -185,8 +185,20 @@ class QM:
       if complexity < min_complexity:
         min_complexity = complexity
         result = primes_in_cover
+      elif complexity == min_complexity:
+        result = self.compare_term(result,primes_in_cover)
 
     return min_complexity,result
+
+  def compare_term(self, term1, term2):
+    for t1,t2 in zip(term1,term2):
+      if (t1 == None and t2 != None) or (t1 < t2):
+        return term1
+      elif (t1 != None and t2 == None) or (t2 < t1):
+        return term2
+
+    return term1
+
 
   def calculate_complexity(self, minterms):
     """
@@ -337,7 +349,7 @@ def main():
     elif len(soln) == 1 and soln[0].count('X') == len(soln[0]):
         stdout.write('tautology\n')
     else:
-        stdout.write(str(sorted(list(soln[1]))))#+'   f = '+str(qm.get_function(soln[1]))+'\n' )
+        stdout.write(str(sorted(list(soln[1])))+"\n")#+'   f = '+str(qm.get_function(soln[1]))+'\n' )
 
 if __name__ == '__main__':
   main()
