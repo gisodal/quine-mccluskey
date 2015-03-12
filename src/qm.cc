@@ -325,15 +325,17 @@ inline unsigned int qm::get_weight(cube_t &c, const uint16_t &COVER){
 int qm::reduce(void *data, unsigned int PRIMES){
     cube_t* prime = (cube_t*) data;
     uint32_t *chart_size = (uint32_t*) (prime+PRIMES);
-    uint32_t *chart_offset = chart_size+models.size();
-    uint16_t *prime_mask = (uint16_t*) (chart_offset+models.size());
-    unsigned int *prime_weight = (unsigned int*) (prime_mask+models.size()*3);
-    uint32_t *chart = (uint32_t*) (prime_weight+models.size());
-    memset((void*)prime_mask,0,sizeof(uint16_t)*models.size()+sizeof(unsigned int)*models.size());
+    const uint16_t MODELS = models.size();
+    uint32_t *chart_offset = chart_size+MODELS;
+    uint16_t *prime_mask = (uint16_t*) (chart_offset+MODELS);
+    unsigned int *prime_weight = (unsigned int*) (prime_mask+MODELS*3);
+    uint32_t *chart = (uint32_t*) (prime_weight+MODELS);
+    memset((void*)prime_mask,0,sizeof(uint16_t)*MODELS+sizeof(unsigned int)*MODELS);
 
+    sort(prime, prime+PRIMES);
     // make prime chart
     unsigned int CHART_SIZE = 0;
-    for(unsigned int i = 0; i < models.size(); i++){
+    for(unsigned int i = 0; i < MODELS; i++){
         chart_offset[i] = CHART_SIZE;
         chart_size[i] = 0;
         for(unsigned int p = 0; p < PRIMES; p++){
@@ -346,11 +348,11 @@ int qm::reduce(void *data, unsigned int PRIMES){
     }
 
     // identify essential implicates and remove the models they cover
-    const uint16_t COVER = (uint16_t)((1 << models.size())-1);
+    const uint16_t COVER = (uint16_t)((1 << MODELS)-1);
     uint16_t cover = COVER;
     uint16_t *essentials = (uint16_t*) alloca(sizeof(uint16_t)*PRIMES);
     unsigned int essential_size = 0;
-    for(unsigned int i = 0; i < models.size() && cover; i++){
+    for(unsigned int i = 0; i < MODELS && cover; i++){
         if(chart_size[i] == 1){
             unsigned int p = chart[chart_offset[i]];
             cover &= ~prime_mask[p];
@@ -371,7 +373,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
     unsigned int min_weight = ~0;
     if(cover != 0){
         uint16_t *non_essentials = essentials+essential_size;
-        uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(models.size())+sizeof(unsigned int)*(PRIMES));
+        uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(MODELS)+sizeof(unsigned int)*(PRIMES));
         unsigned int *weights = (unsigned int*) covers + PRIMES;
 
         covers[0] = cover;
@@ -392,9 +394,10 @@ int qm::reduce(void *data, unsigned int PRIMES){
                         weights[depth+1] = weights[depth] + get_weight(prime[p], COVER) + 1;
 
                         // prune
-                        if(weights[depth+1] >= min_weight)
+                        if(weights[depth+1] >= min_weight){
                             stack[depth][0]++;
-                        else {
+                            i--;
+                        } else {
                             // update cover
                             cover = covers[depth] & (~prime_mask[p]);
 

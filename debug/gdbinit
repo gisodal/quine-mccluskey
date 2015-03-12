@@ -5,6 +5,4 @@ ds chart_size[0]@models.size()
 ds stack[0]@models.size()
 ds /t covers[depth]@2
 ds /t cover
-ds i
 ds depth
-
