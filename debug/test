@@ -58,7 +58,7 @@ export -f set_permutations;
 function run(){
     local vars=$1
     local m=$2
-    local PYOUTPUT=$($DIR/pylibs/qm.py -v$vars -o$m)
+    local PYOUTPUT=$($DIR/pylibs/qm.py -v$vars -o$m | sed 's:[][\ ]::g' 2>&1)
     local COUTPUT=$($DIR/bin/qm -v$vars -o$m 2>&1)
 
     ##if [ "$PYOUTPUT" != "$COUTPUT" ]; then
