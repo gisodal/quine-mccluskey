@@ -314,6 +314,7 @@ int qm::compute_primes(){
 
     return CANONICAL;
 }
+<<<<<<< HEAD
 
 inline unsigned int qm::get_weight(cube_t &c, const uint16_t &MASK){
     uint16_t cover = (~c[1]) & MASK;
@@ -321,8 +322,32 @@ inline unsigned int qm::get_weight(cube_t &c, const uint16_t &MASK){
     weight = (weight==1?0:weight);
     weight += bitcount((~c[0]) & cover);
     return weight;
+||||||| merged common ancestors
+
+inline unsigned int qm::get_weight(cube_t &c, const uint16_t &COVER){
+    uint16_t cover = (~c[1]) & COVER;
+    unsigned int weight;
+    return ((weight=bitcount(cover))==1?0:weight) + bitcount((~c[0]) & cover);
+=======
+inline unsigned int qm::get_weight(cube_t &c, const uint16_t &MASK){
+    uint16_t cover = (~c[1]) & MASK;
+    unsigned int weight = bitcount(cover);
+    weight = (weight==1?0:weight);
+    weight += bitcount((~c[0]) & cover);
+    return weight;
+    // uint16_t cover = (~c[1]) & COVER;
+    // unsigned int weight;
+    // return ((weight=bitcount(cover))==1?0:weight) + bitcount((~c[0]) & cover);
+>>>>>>> c6fa3788eb1948ed6763452dc924db3b7bd42554
 }
 
+<<<<<<< HEAD
+||||||| merged common ancestors
+
+=======
+
+
+>>>>>>> c6fa3788eb1948ed6763452dc924db3b7bd42554
 int qm::reduce(void *data, unsigned int PRIMES){
     cube_t* prime = (cube_t*) data;
     uint32_t *chart_size = (uint32_t*) (prime+PRIMES);
@@ -403,7 +428,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
                         weights[depth+1] = weights[depth] + get_weight(prime[p], MASK) + 1;
 
                         // prune
-                        if(weights[depth+1] >= min_weight){
+                        if(weights[depth+1] > min_weight){
                             stack[depth][0]++;
                             i--;
                         } else {
@@ -426,6 +451,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
                                     min_weight = tmp_weight;
                                 }
 
+<<<<<<< HEAD
                                 //printf("%d:%u:", counter, (min_weight==~0?0:min_weight));
                                 //for(int d = 0; d <= depth; d++){
                                 //    unsigned int p = chart[chart_offset[stack[d][1]]+stack[d][0]];
@@ -434,6 +460,11 @@ int qm::reduce(void *data, unsigned int PRIMES){
                                 //    printf(" %d:%d:(%d, %d)", p, get_weight(prime[p],MASK), prime[p][0], prime[p][1]);
                                 //} printf("\n");
 
+||||||| merged common ancestors
+=======
+
+
+>>>>>>> c6fa3788eb1948ed6763452dc924db3b7bd42554
                                 stack[depth][0]++;
                                 continue;
                             } else { // acquire more primes

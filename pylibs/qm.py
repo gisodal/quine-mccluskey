@@ -184,12 +184,21 @@ class QM:
       complexity = self.calculate_complexity(primes_in_cover)
       if complexity < min_complexity:
         min_complexity = complexity
+<<<<<<< HEAD
         result = [primes_in_cover]
       elif complexity == min_complexity:
         result.append(primes_in_cover)
+||||||| merged common ancestors
+        result = primes_in_cover
+=======
+        result = primes_in_cover
+      elif complexity == min_complexity:
+        result = self.compare_term(result,primes_in_cover)
+>>>>>>> c6fa3788eb1948ed6763452dc924db3b7bd42554
 
     return min_complexity,result
 
+<<<<<<< HEAD
   def compare_term(self, term1, term2):
     for t1,t2 in zip(term1,term2):
       if (t1 == None and t2 != None) or (t1 < t2):
@@ -208,6 +217,19 @@ class QM:
         term_complexity = 0
       return term_complexity + bitcount(~minterm[0] & masked)
 
+||||||| merged common ancestors
+=======
+  def compare_term(self, term1, term2):
+    for t1,t2 in zip(term1,term2):
+      if (t1 == None and t2 != None) or (t1 < t2):
+        return term1
+      elif (t1 != None and t2 == None) or (t2 < t1):
+        return term2
+
+    return term1
+
+
+>>>>>>> c6fa3788eb1948ed6763452dc924db3b7bd42554
   def calculate_complexity(self, minterms):
     """
     Calculate the complexity of the given function. The complexity is calculated
@@ -357,12 +379,18 @@ def main():
     elif len(soln) == 1 and soln[0].count('X') == len(soln[0]):
         stdout.write('tautology\n')
     else:
+<<<<<<< HEAD
         #stdout.write(str(soln[0])+":") #+'   f = '+str(qm.get_function(soln[2]))+'\n' )
         for cover in soln[1]:
             stdout.write(str(soln[0])+":")
             for prime in sorted(list(cover)):
                 stdout.write(" "+str(qm.calculate_complexity_term(prime))+":"+str(prime))
             stdout.write("\n")
+||||||| merged common ancestors
+        stdout.write(str(sorted(list(soln[1]))))#+'   f = '+str(qm.get_function(soln[1]))+'\n' )
+=======
+        stdout.write(str(sorted(list(soln[1])))+"\n")#+'   f = '+str(qm.get_function(soln[1]))+'\n' )
+>>>>>>> c6fa3788eb1948ed6763452dc924db3b7bd42554
 
 if __name__ == '__main__':
   main()
