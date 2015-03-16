@@ -419,7 +419,9 @@ int qm::reduce(void *data, unsigned int PRIMES){
                                 //unsigned int weight = depth+essentials+1;
                                 //set_min_value(min_weight, weights[depth+1] + (weight==1?-1:0));a
                                 non_essential_size = depth+1;
-                                unsigned int tmp_weight = weights[depth+1] - (non_essential_size+essential_size==1?1:0);
+                                unsigned int tmp_weight = weights[depth+1];
+                                if(non_essential_size+essential_size==1)
+                                    tmp_weight--;
 
                                 if(tmp_weight < min_weight) {
                                     for(int d = 0; d <= depth; d++){
