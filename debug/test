@@ -69,8 +69,8 @@ function run(){
         echo -e "----------------------------------------------"
         echo -e "    C : \n$COUTPUT"
         echo
-    else
-        echo -e " -v$vars -o$m $SOLUTION"
+#    else
+#        echo -e " -v$vars -o$m $SOLUTION"
     fi
 }
 export -f run;
