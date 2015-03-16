@@ -58,17 +58,19 @@ export -f set_permutations;
 function run(){
     local vars=$1
     local m=$2
-    local PYOUTPUT=$($DIR/pylibs/qm.py -v$vars -o$m | sed 's:[][\ ]::g' 2>&1)
+    local PYOUTPUT=$($DIR/pylibs/qm.py -v$vars -o$m)
     local COUTPUT=$($DIR/bin/qm -v$vars -o$m 2>&1)
 
-    #if [ "$PYOUTPUT" != "$COUTPUT" ]; then
-    if [ "$(echo -e "$PYOUTPUT"| tail -1)" != "$(echo -e "$COUTPUT"| tail -1)" ]; then
+    local SOLUTION=$(echo -e "$PYOUTPUT" | grep "$(echo -e "$COUTPUT"| tail -1)")
+    if [ "$COUTPUT" == "" -o "$SOLUTION" == "" ]; then
         echo "=============================================="
         echo -e "options: -v$vars -o$m\n"
         echo -e "    PY: \n$PYOUTPUT"
         echo -e "----------------------------------------------"
         echo -e "    C : \n$COUTPUT"
         echo
+    #else
+    #    echo -e " -v$vars -o$m $SOLUTION"
     fi
 
 }
@@ -80,15 +82,15 @@ function runall(){
     local ones=$3
 
     echo "  ($ones/$models)"
-    parallel -k run $vars {} ::: $(set_permutations $models $ones)
+    parallel --load 100% -k run $vars {} ::: $(set_permutations $models $ones)
 }
 export -f runall;
 
 for ((VARS=VARS_MIN; VARS < VARS_MAX; VARS++)); do
     echo "===> VARIABLES: $VARS"
     export MODELS=$(echo "2^$VARS" | bc)
-    sequence=$(seq 1 $(($MODELS)))
-    parallel -k runall $VARS $MODELS {} ::: $sequence
+    sequence=$(seq 2 $(($MODELS-1)))
+    parallel --load 100% -k runall $VARS $MODELS {} ::: $sequence
 done
 echo
 

@@ -90,7 +90,7 @@ class QM:
       return 0,'1'
 
     primes = self.compute_primes(ones + dc)
-    return self.unate_cover(sorted(list(primes)), ones)
+    return self.unate_cover(list(primes), ones)
 
   def compute_primes(self, cubes):
     """
@@ -184,9 +184,29 @@ class QM:
       complexity = self.calculate_complexity(primes_in_cover)
       if complexity < min_complexity:
         min_complexity = complexity
-        result = primes_in_cover
+        result = [primes_in_cover]
+      elif complexity == min_complexity:
+        result.append(primes_in_cover)
 
     return min_complexity,result
+
+  def compare_term(self, term1, term2):
+    for t1,t2 in zip(term1,term2):
+      if (t1 == None and t2 != None) or (t1 < t2):
+        return term1
+      elif (t1 != None and t2 == None) or (t2 < t1):
+        return term2
+
+    return term1
+
+
+  def calculate_complexity_term(self,minterm):
+      mask = (1<<self.numvars)-1
+      masked = ~minterm[1] & mask
+      term_complexity = bitcount(masked)
+      if term_complexity == 1:
+        term_complexity = 0
+      return term_complexity + bitcount(~minterm[0] & masked)
 
   def calculate_complexity(self, minterms):
     """
@@ -337,7 +357,12 @@ def main():
     elif len(soln) == 1 and soln[0].count('X') == len(soln[0]):
         stdout.write('tautology\n')
     else:
-        stdout.write(str(sorted(list(soln[1]))))#+'   f = '+str(qm.get_function(soln[1]))+'\n' )
+        #stdout.write(str(soln[0])+":") #+'   f = '+str(qm.get_function(soln[2]))+'\n' )
+        for cover in soln[1]:
+            stdout.write(str(soln[0])+":")
+            for prime in sorted(list(cover)):
+                stdout.write(" "+str(qm.calculate_complexity_term(prime))+":"+str(prime))
+            stdout.write("\n")
 
 if __name__ == '__main__':
   main()
