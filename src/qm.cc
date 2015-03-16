@@ -42,9 +42,6 @@ static inline bool is_power_of_two_or_zero(const uint16_t x){
     return (x & (x - 1)) == 0;
 }
 
-
-
-
 static inline uint32_t log2(const uint32_t x) { // for x86 and x86-64 architecture
     uint32_t y;
     asm ( "\tbsr %1, %0\n"

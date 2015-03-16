@@ -2,7 +2,8 @@
 #define COVER_H
 
 #include <stdint.h>
-typedef uint32_t cover_element_t;
+
+typedef unsigned char cover_element_t;
 
 template <const unsigned int N>
 class cover {
@@ -15,10 +16,9 @@ class cover {
         void operator&(cover&);
         void operator^(cover&);
     private:
-        cover_element_t elements[N];
+        cover_element_t *elements;
         //const unsigned int size = N;
 };
-
 
 
 #endif
