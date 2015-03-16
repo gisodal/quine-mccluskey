@@ -323,23 +323,6 @@ inline unsigned int qm::get_weight(cube_t &c, const uint16_t &MASK){
     return weight;
 }
 
-
-const char *byte_to_binary(uint16_t x)
-{
-    static char b[9];
-    b[0] = '\0';
-
-    int z;
-    for (unsigned int i = 0; i < 8; i++)
-    {
-        strcat(b, ((x >> i) & 1==1?"1":"0"));
-    }
-
-    return b;
-}
-
-
-
 int qm::reduce(void *data, unsigned int PRIMES){
     cube_t* prime = (cube_t*) data;
     uint32_t *chart_size = (uint32_t*) (prime+PRIMES);
@@ -387,7 +370,6 @@ int qm::reduce(void *data, unsigned int PRIMES){
             }
 
             if(insert){
-                printf("p %d ", p);
                 cover &= ~prime_mask[p];
                 essentials[essential_size++] = p;
                 weight += 1 + get_weight(prime[p],MASK);
@@ -421,7 +403,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
                         weights[depth+1] = weights[depth] + get_weight(prime[p], MASK) + 1;
 
                         // prune
-                        if(weights[depth+1] > min_weight){
+                        if(weights[depth+1] >= min_weight){
                             stack[depth][0]++;
                             i--;
                         } else {
@@ -477,14 +459,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
         min_weight = (essential_size+non_essential_size==1?weight-1:weight);
     }
 
-    for(unsigned int i = 0; i < essential_size+non_essential_size; i++){
-        printf(" %d", essentials[i]);
-    } printf("\n");
     sort(essentials, essentials+essential_size+non_essential_size);
-    for(unsigned int i = 0; i < essential_size+non_essential_size; i++){
-        printf(" %d", essentials[i]);
-    } printf("\n");
-
     printf("%u:", min_weight);
     for(unsigned int i = 0; i < essential_size+non_essential_size; i++){
         printf(" %d:(%d, %d)", get_weight(prime[essentials[i]],MASK), prime[essentials[i]][0], prime[essentials[i]][1]);

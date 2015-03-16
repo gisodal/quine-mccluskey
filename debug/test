@@ -69,8 +69,8 @@ function run(){
         echo -e "----------------------------------------------"
         echo -e "    C : \n$COUTPUT"
         echo
-    #else
-    #    echo -e " -v$vars -o$m $SOLUTION"
+    else
+        echo -e " -v$vars -o$m $SOLUTION"
     fi
 
 }
@@ -89,7 +89,9 @@ export -f runall;
 for ((VARS=VARS_MIN; VARS < VARS_MAX; VARS++)); do
     echo "===> VARIABLES: $VARS"
     export MODELS=$(echo "2^$VARS" | bc)
-    sequence=$(seq 2 $(($MODELS-1)))
+
+    [ $MODELS -ge 16 ] && models=16 || models=$MODELS;
+    sequence=$(seq 2 $(($models-1)))
     parallel --load 100% -k runall $VARS $MODELS {} ::: $sequence
 done
 echo
