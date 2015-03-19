@@ -9,7 +9,7 @@
 using namespace std;
 
 int main (int argc, char **argv){
-    qm q;
+    qm<uint32_t> q;
 
     opterr = 0;
     int i,c,index;

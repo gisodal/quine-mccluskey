@@ -31,7 +31,7 @@ SHARED_LIBRARIES=readline termcap pthread
 # compiler
 CC=g++
 EXT=cc
-CFLAGS=-O3 -w -std=c++0x
+CFLAGS=-O3 -w -std=c++11
 
 OPTDFLAG=-O0
 ifeq ($(shell hostname),fs.lgm)
@@ -41,7 +41,7 @@ ifneq ($(shell hostname | grep 'node[0-9][0-9]'),)
     OPTDFLAG=-O1
 endif
 
-CDFLAGS=$(OPTDFLAG) -ggdb -Wall -Wextra -D DEBUG -std=c++0x -rdynamic -Wno-write-strings -Wno-unused-function -Wno-system-headers
+CDFLAGS=$(OPTDFLAG) -g3 -Wall -Wextra -D DEBUG -std=c++11 -rdynamic -Wno-write-strings -Wno-unused-function -Wno-system-headers
 
 # ------------------------------------------------------------------------------
 # environment variables

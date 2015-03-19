@@ -4,41 +4,70 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
-#include <limits>
+#include <limits.h>
 
 using namespace std;
 
-inline void set_bit(uint16_t &x, uint16_t i){
+template <typename T>
+inline void set_bit(T &x, unsigned i){
     x |= (1<<i);
 }
 
-inline void clear_bit(uint16_t &x, uint16_t i){
-     x &= ~(1<<i);
+template <typename T>
+inline void clear_bit(T &x, unsigned i){
+        x &= ~(1<<i);
 }
 
-inline void toggle_bit(uint16_t &x, uint16_t i){
+template <typename T>
+inline void toggle_bit(T &x, unsigned int i){
     x ^= (1 << i);
 }
 
-inline bool is_set_bit(uint16_t x, uint16_t i){
+template <typename T>
+inline bool is_set_bit(T x, unsigned int i){
     return (x >> i) & 1;
 }
 
-inline void set_min_value(unsigned int &x, unsigned int y){
+template <typename T>
+inline void set_min_value(T &x, T y){
     x = y ^ ((x ^ y) & -(x < y));
 }
 
-static inline uint32_t bitcount(uint32_t x){
-    x = x - ((x >> 1) & 0x55555555);
-    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-    return (((x + (x >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
+template <typename T>
+inline unsigned int bitcount(T x){
+    uint16_t count = 0;
+    while(x){
+        count += x & 1;
+        x >>= 1;
+    }
+    return count;
 }
 
-static inline bool is_power_of_two_or_zero(const uint32_t x){
-    return (x & (x - 1)) == 0;
+//template <>
+//inline uint16_t bitcount(uint32_t x){
+//    x = x - ((x >> 1) & 0x55555555);
+//    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
+//    return (((x + (x >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
+//}
+
+
+template <>
+inline unsigned int bitcount(uint32_t x){ // assume uint32_t == unsigned int
+    return __builtin_popcount(x);
 }
 
-static inline bool is_power_of_two_or_zero(const uint16_t x){
+template <>
+inline unsigned int bitcount(uint64_t x){
+    return __builtin_popcountl(x);;
+}
+
+template <>
+inline unsigned int bitcount(uint128_t x){
+    return bitcount((uint64_t) x) + bitcount((uint64_t) (x>>64));
+}
+
+template <typename T>
+inline bool is_power_of_two_or_zero(const T x){
     return (x & (x - 1)) == 0;
 }
 
@@ -131,22 +160,24 @@ static inline uint32_t roundup2(uint32_t x){
     return x;
 }
 
-
-qm::qm(){
+template <typename M>
+qm<M>::qm(){
 
 }
 
-qm::~qm(){
+template <typename M>
+qm<M>::~qm(){
     clear();
 }
 
-void qm::clear(){
+template <typename M>
+void qm<M>::clear(){
     variables.clear();
     models.clear();
-    primes.clear();
 }
 
-int qm::solve(){
+template <typename M>
+int qm<M>::solve(){
     if(models.size() == 0){
         printf("'0'\n");
         return 0;
@@ -154,15 +185,16 @@ int qm::solve(){
         printf("'1'\n");
         return 1;
     } else if(models.size() == 1){
-        printf("(%d,0)\n",models[0]);
+        printf("(%lu,0)\n",models[0]);
         return 2;
-    } else if(compute_primes())
+    } else if(canonical_primes())
         return 2;
 
     return 0;
 }
 
-bool qm::valid(){
+template <typename M>
+bool qm<M>::valid(){
     uint32_t vars = variables.size();
     if(vars > 0){
         uint32_t max = pow2(vars);
@@ -174,9 +206,79 @@ bool qm::valid(){
     return false;
 }
 
-int qm::quine_mccluskey(void *data){
-    if(!data)
-        return 0;
+template <typename M>
+size_t qm<M>::required_size(){
+    unsigned int VARIABLES = variables.size();
+    unsigned int MODELS = pow2(VARIABLES);
+    unsigned int GROUPS = VARIABLES+1;
+    unsigned int meta_size = GROUPS;
+    unsigned int cubes_size = 2*factorial(VARIABLES);
+
+    unsigned int total_size = sizeof(uint64_t)*2*cubes_size + sizeof(uint32_t)*(MODELS+2*2*meta_size) + sizeof(char)*cubes_size;
+    if(total_size >= 800000){
+        fprintf(stderr, "compute_primesot fit > 8Mb onto stack!\n");
+        exit(1);
+    }
+    return total_size;
+}
+
+template <typename M>
+int qm<M>::canonical_primes(){
+    //void *data = alloca(required_size());
+    void *data = malloc(required_size());
+    if(!data){
+        printf("stack allocation failed at size %u (%.2fMb)\n", required_size(), required_size()/(float)1024);
+        return -2;
+    }
+    int PRIMES;
+
+    unsigned int VARIABLES = variables.size();
+    if(VARIABLES <= 8){
+        cube_size = 8;
+        PRIMES = compute_primes<uint8_t>(data);
+    } else if(VARIABLES <= 16){
+        cube_size = 16;
+        PRIMES = compute_primes<uint16_t>(data);
+    } else if(VARIABLES <= 32){
+        cube_size = 32;
+        PRIMES = compute_primes<uint32_t>(data);
+    } else if(VARIABLES <= 64){
+        cube_size = 64;
+        PRIMES = compute_primes<uint64_t>(data);
+    } else if(VARIABLES <= 128){
+        cube_size = 128;
+        PRIMES = compute_primes<uint128_t>(data);
+    } else return -1;
+
+    // TODO: store primes
+    free(data);
+    return PRIMES;
+}
+
+template <typename M>
+template <typename T>
+int qm<M>::compute_primes(void *data){
+    unsigned int PRIMES = quine_mccluskey<T>(data);
+    if(PRIMES > 0){
+        unsigned int MODELS = models.size();
+        if(MODELS <= 8){
+        //    return reduce<T,uint8_t>(data,PRIMES);
+        //} else if(MODELS <= UINT16_MAX){
+            return reduce<T,uint16_t>(data,PRIMES);
+        } else if(MODELS <= 32){
+            return reduce<T,uint32_t>(data,PRIMES);
+        } else if(MODELS <= 64){
+            return reduce<T,uint64_t>(data,PRIMES);
+        } else if(MODELS <= 128){
+            return reduce<T,uint128_t>(data,PRIMES);
+        } else return -1;
+    }
+    return PRIMES;
+}
+
+template <typename M>
+template <typename T>
+int qm<M>::quine_mccluskey(void *data){
     unsigned int VARIABLES = variables.size();
     unsigned int MODELS = pow2(VARIABLES);
     unsigned int GROUPS = VARIABLES+1;
@@ -184,21 +286,21 @@ int qm::quine_mccluskey(void *data){
     unsigned int meta_size = GROUPS;
     unsigned int cubes_size = 2*factorial(VARIABLES);
 
-    cube_t *prime = (cube_t*) data;
-    uint32_t *size = (uint32_t*) (prime + MODELS);
+    cube_t<T> *primes = (cube_t<T>*) data;
+    uint32_t *size = (uint32_t*) (primes + MODELS);
     uint32_t *offset = size + 2*meta_size;
     char *check = (char*) (offset + 2*meta_size);
-    cube_t *cubes = (cube_t*) (check + cubes_size);
+    cube_t<T> *cubes = (cube_t<T>*) (check + cubes_size);
 
     memset(size, 0, sizeof(uint32_t)*meta_size);
-    memset(check, 0, sizeof(char)*cubes_size);
+    memset(check, 0, sizeof(uint8_t)*cubes_size);
 
     // prepare cubes
-    uint32_t *model_to_group = (uint32_t*) data;
+    T *model_to_group = (T*) data;
     unsigned int ccubes_size = models.size();
     for(unsigned int i = 0; i < ccubes_size; i++){
-        uint16_t c = models[i];
-        uint32_t group = bitcount(c);
+        M c = models[i];
+        T group = bitcount(c);
         model_to_group[c] = group;
         size[group]++;
     }
@@ -210,14 +312,14 @@ int qm::quine_mccluskey(void *data){
     }   size[GROUPS-1] = 0;
 
     for(unsigned int i = 0; i < ccubes_size; i++){
-        uint16_t c = models[i];
+        T c = models[i];
         uint32_t index = offset[model_to_group[c]] + size[model_to_group[c]]++;
         cubes[index] = {{c,0}};
     }
 
     // quine-mccluskey
     unsigned int groups = GROUPS-1;
-    cube_t *ccubes = cubes, *ncubes = cubes + cubes_size;
+    cube_t<T> *ccubes = cubes, *ncubes = cubes + cubes_size;
     uint32_t *csize = size, *nsize = size + meta_size;
     uint32_t *coffset = offset, *noffset = offset + meta_size;
     while(groups){
@@ -231,12 +333,12 @@ int qm::quine_mccluskey(void *data){
                 for(unsigned int j = 0; j < csize[group+1]; j++){
                     unsigned int oj = coffset[group+1]+j;
 
-                    cube_t &ci = ccubes[oi], &cj = ccubes[oj];
+                    cube_t<T> &ci = ccubes[oi], &cj = ccubes[oj];
                     uint16_t p = ci[0] ^ cj[0];
                     if(ci[1] == cj[1] && is_power_of_two_or_zero(p)){
                         // merge
 
-                        cube_t &co = ncubes[ncubes_size];
+                        cube_t<T> &co = ncubes[ncubes_size];
                         co[0] = ci[0] & cj[0];
                         co[1] = ci[1] | p;
                         check[oi] = 1;
@@ -265,11 +367,11 @@ int qm::quine_mccluskey(void *data){
             if(!check[i]){
                 bool insert = true;
                 for(unsigned int p = 0; p < PRIMES; p++)
-                    if(prime[p] == ccubes[i])
+                    if(primes[p] == ccubes[i])
                         insert = false;
 
                 if(insert)
-                    prime[PRIMES++] = ccubes[i];
+                    primes[PRIMES++] = ccubes[i];
             } else check[i] = 0;
         }
 
@@ -284,54 +386,35 @@ int qm::quine_mccluskey(void *data){
         groups--;
     }
 
+    sort(primes, primes+PRIMES);
+    for(unsigned int i = 0; i < PRIMES; i++){
+        printf(" (%d, %d)", primes[i][0], primes[i][1]);
+    }
+    printf("\n");
     return PRIMES;
 }
 
-size_t qm::required_size(){
-    unsigned int VARIABLES = variables.size();
-    unsigned int MODELS = pow2(VARIABLES);
-    unsigned int GROUPS = VARIABLES+1;
-    unsigned int meta_size = GROUPS;
-    unsigned int cubes_size = 2*factorial(VARIABLES);
-
-    unsigned int total_size = sizeof(cube_t)*2*cubes_size + sizeof(uint32_t)*(MODELS+2*2*meta_size) + sizeof(char)*cubes_size;
-    if(total_size >= 800000){
-        fprintf(stderr, "cannot fit > 8Mb onto stack!\n");
-        exit(1);
-    }
-    return total_size;
-}
-
-int qm::compute_primes(){
-    void *data = alloca(required_size());
-    unsigned int PRIMES, CANONICAL;
-
-    PRIMES = quine_mccluskey((uint32_t*) data);
-    CANONICAL = reduce((uint32_t*) data,PRIMES);
-
-    return CANONICAL;
-}
-
-inline unsigned int qm::get_weight(cube_t &c, const uint16_t &MASK){
-    uint16_t cover = (~c[1]) & MASK;
+template <typename M>
+template <typename T>
+inline unsigned int qm<M>::get_weight(cube_t<T> &c, const T &MASK){
+    T cover = (~(c[1])) & MASK;
     unsigned int weight = bitcount(cover);
     weight = (weight==1?0:weight);
-    weight += bitcount((~c[0]) & cover);
+    weight += bitcount((~(c[0])) & cover);
     return weight;
-    // uint16_t cover = (~c[1]) & COVER;
-    // unsigned int weight;
-    // return ((weight=bitcount(cover))==1?0:weight) + bitcount((~c[0]) & cover);
 }
 
-int qm::reduce(void *data, unsigned int PRIMES){
-    cube_t* prime = (cube_t*) data;
-    uint32_t *chart_size = (uint32_t*) (prime+PRIMES);
-    const uint16_t MODELS = models.size();
-    uint32_t *chart_offset = chart_size+MODELS;
-    uint16_t *prime_mask = (uint16_t*) (chart_offset+MODELS);
+template <typename M>
+template <typename P, typename T>
+int qm<M>::reduce(void *data, unsigned int PRIMES){
+    const unsigned int MODELS = models.size();
+    cube_t<P>* prime = (cube_t<P>*) data;
+    uint16_t *chart_size = (uint16_t*) (prime+PRIMES);
+    uint32_t *chart_offset = (uint32_t*) (chart_size+MODELS);
+    T *prime_mask = (T*) (chart_offset+MODELS);
     unsigned int *prime_weight = (unsigned int*) (prime_mask+MODELS*3);
-    uint32_t *chart = (uint32_t*) (prime_weight+MODELS);
-    memset((void*)prime_mask,0,sizeof(uint16_t)*MODELS+sizeof(unsigned int)*MODELS);
+    T *chart = (T*) (prime_weight+MODELS);
+    memset((void*)prime_mask,0,sizeof(T)*MODELS+sizeof(unsigned int)*MODELS);
 
     sort(prime, prime+PRIMES);
 
@@ -350,10 +433,11 @@ int qm::reduce(void *data, unsigned int PRIMES){
     }
 
     // identify essential implicates and remove the models they cover
-    const uint16_t COVER = (uint16_t)((1 << MODELS)-1);
-    const uint16_t MASK = (uint16_t)((1 << variables.size())-1);
-    uint16_t cover = COVER;
-    uint16_t *essentials = (uint16_t*) alloca(sizeof(uint16_t)*PRIMES);
+    const T COVER = (T) ((1 << (MODELS-1))-1) | (1 << (MODELS-1));   // (1 << 32)-1 = 0 !!
+    const P MASK = (T)((1 << (variables.size()-1))-1) | (1 << (variables.size()-1));
+    T cover = COVER;
+    //unsigned int *essentials = (unsigned int*) alloca(sizeof(unsigned int)*PRIMES);
+    unsigned int *essentials = (unsigned int*) malloc(sizeof(unsigned int)*PRIMES);
     unsigned int essential_size = 0;
     unsigned weight = 0;
     for(unsigned int i = 0; i < MODELS && cover; i++){
@@ -372,7 +456,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
             if(insert){
                 cover &= ~prime_mask[p];
                 essentials[essential_size++] = p;
-                weight += 1 + get_weight(prime[p],MASK);
+                weight += 1 + get_weight<P>(prime[p],MASK);
             }
         }
     }
@@ -380,16 +464,22 @@ int qm::reduce(void *data, unsigned int PRIMES){
     // find minimal prime implicate representation
     unsigned int non_essential_size = 0;
     unsigned int min_weight = ~0;
+    unsigned int max_depth = 0;
     if(cover != 0){
-        uint16_t *non_essentials = essentials+essential_size;
-        uint16_t *covers = (uint16_t*) alloca(sizeof(uint16_t)*(MODELS)+sizeof(unsigned int)*(PRIMES));
+        unsigned int *non_essentials = essentials+essential_size;
+        T *covers = (T*) alloca(sizeof(T)*(MODELS)+sizeof(cube_t<P>)*(PRIMES));
+        if(!covers){
+            printf("failed to allocate covers\n");
+            return -1;
+        }
         unsigned int *weights = (unsigned int*) covers + PRIMES;
 
         covers[0] = cover;
         weights[0] = weight;
 
-        cube_t stack[100];
+        cube_t<T> stack[100]; // cube_t(prime index (< PRIMES), i (< max depth))
         int depth = 0;
+
         int i = 0;
         stack[depth][0] = 0;
         while(depth >= 0){
@@ -400,7 +490,7 @@ int qm::reduce(void *data, unsigned int PRIMES){
                         stack[depth][1] = i;
 
                         // compute weight
-                        weights[depth+1] = weights[depth] + get_weight(prime[p], MASK) + 1;
+                        weights[depth+1] = weights[depth] + get_weight<P>(prime[p], MASK) + 1;
 
                         // prune
                         if(weights[depth+1] > min_weight){
@@ -415,7 +505,9 @@ int qm::reduce(void *data, unsigned int PRIMES){
                                 // go through more primes on current depth
                                 //unsigned int weight = depth+essentials+1;
                                 //set_min_value(min_weight, weights[depth+1] + (weight==1?-1:0));a
+
                                 non_essential_size = depth+1;
+                                max_depth = (max_depth<non_essential_size?non_essential_size:max_depth);
                                 unsigned int tmp_weight = weights[depth+1];
                                 if(non_essential_size+essential_size==1)
                                     tmp_weight--;
@@ -460,18 +552,21 @@ int qm::reduce(void *data, unsigned int PRIMES){
     if(min_weight == (unsigned int) ~0){
         min_weight = (essential_size+non_essential_size==1?weight-1:weight);
     }
-
     sort(essentials, essentials+essential_size+non_essential_size);
-    printf("%u:", min_weight);
+
+    printf("%u\n", max_depth);
+    printf("%u: ", min_weight);
     for(unsigned int i = 0; i < essential_size+non_essential_size; i++){
-        printf(" %d:(%d, %d)", get_weight(prime[essentials[i]],MASK), prime[essentials[i]][0], prime[essentials[i]][1]);
+        printf(" %u:(%lu, %lu)", get_weight<P>(prime[essentials[i]],MASK), prime[essentials[i]][0], prime[essentials[i]][1]);
     }
     printf("\n");
 
     return 0;
 }
 
-void qm::uniq(cube_t*, unsigned int){
-
-}
+template class qm<uint8_t>;
+template class qm<uint16_t>;
+template class qm<uint32_t>;
+template class qm<uint64_t>;
+template class qm<uint128_t>;
 
