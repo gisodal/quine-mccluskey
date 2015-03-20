@@ -15,7 +15,7 @@ inline void set_bit(T &x, unsigned i){
 
 template <typename T>
 inline void clear_bit(T &x, unsigned i){
-        x &= ~(1<<i);
+    x &= ~(1<<i);
 }
 
 template <typename T>
@@ -171,7 +171,7 @@ qm<M>::~qm(){
 }
 
 template <typename M>
-void qm<M>::clear(){
+void qm::clear(){
     variables.clear();
     models.clear();
 }

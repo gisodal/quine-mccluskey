@@ -3,136 +3,74 @@
 
 #include <stdlib.h>
 
-static unsigned int cover_size(const size_t base, unsigned int n){
-    unsigned int c = 1;
-    while(base <= n){
-        n >>= 1;
-        c <<= 1;
-    }
-    return (c > 1?c>>1:c);
-}
-
-template <typename T, const unsigned int N>
-class cover {
+template <typename T>
+class cover_element {
     public:
-        T& operator[](unsigned int);
-        bool operator==(cover&);
-        bool is_set(unsigned int);
-        cover& operator|=(cover&);
-        cover& operator|(cover&);
-        cover& operator=(cover&);
-        cover& operator=(unsigned int);
-        cover& operator&=(cover&);
-        cover& operator&(cover&);
-        cover& operator^(cover&);
-        cover& operator^=(cover&);
-        T* front();
-        T* back();
-        size_t size();
-        size_t bit_size();
+        size_t size() const;
+        unsigned int count() const;
+        bool test(unsigned int) const;
+        bool none() const;
+        bool all() const;
+        void set_all();
+        void set_lsb(unsigned int i);
+        void set(unsigned int, bool val = true);
+        bool operator==(const cover_element&) const;
+        cover_element& operator=(unsigned int);
+        cover_element& operator=(const cover_element&);
+        cover_element& operator|=(const cover_element&);
+        cover_element& operator&=(const cover_element&);
+        cover_element& operator^=(const cover_element&);
+        cover_element& operator|(const cover_element&) const;
+        cover_element& operator&(const cover_element&) const;
+        cover_element& operator^(const cover_element&) const;
     private:
-        T* data[N];
-        //const unsigned int size = N;
+        T value;
 };
 
-template <typename T, const unsigned int N>
-bool cover<T,N>::is_set(unsigned int i){
-    unsigned int size = (sizeof(T)*8);
-    return (((T*)this)[i/(sizeof(T)*8)] >> (i%( sizeof(T)*8))) & 1;
-}
+#include "cover.th"
 
-template <typename T, const unsigned int N>
-size_t cover<T,N>::size(){
-    return sizeof(T)*N;
-}
+class cover {
+    public:
+        static unsigned int size(const size_t base, unsigned int n);
+        bool operator==(const unsigned int,const cover&) const;
+        bool test(const unsigned int,unsigned int) const;
+        size_t int size(const unsigned int) const;
+        unsigned int count(const unsigned int) const;
+        bool none(const unsigned int) const;
+        bool all(const unsigned int) const;
+        void set(const unsigned int, unsigned int, bool val = true);
+        void set_lsb(const unsigned int, unsigned int i);
+        void set_all(const unsigned int);
+        cover& operator=(const unsigned int, unsigned int);
+        cover& operator=(const unsigned int, const cover&);
+        cover& operator|=(const unsigned int, const cover&);
+        cover& operator&=(const unsigned int, const cover&);
+        cover& operator^=(const unsigned int, const cover&);
+        cover& operator|(const unsigned int, const cover&) const;
+        cover& operator&(const unsigned int, const cover&) const;
+        cover& operator^(const unsigned int, const cover&) const;
+};
 
-template <typename T, const unsigned int N>
-size_t cover<T,N>::bit_size(){
-    return sizeof(T)*N*8;
-}
+class cover_list {
+    public:
+        class iterator {
+            iterator& operator++(unsigned int);
+            iterator& operator--(unsigned int)
+            iterator& operator=(const void *v, unsigned int s);
+            iterator& operator=(const iterator &it);
+            bool operator!=(const iterator &it) const;
+            bool operator==(const iterator &it) const;
+            cover *element;
+            unsigned int size;
+        };
 
-template <typename T, const unsigned int N>
-T* cover<T,N>::front(){
-    return (T*) this;
-}
-
-template <typename T, const unsigned int N>
-T* cover<T,N>::back(){
-    return front() + N;
-}
-
-template <typename T, const unsigned int N>
-bool cover<T,N>::operator==(cover<T,N> &c){
-    for(unsigned int i = 0; i < N; i++)
-        if(((T*)this)[i] != c[i])
-            return false;
-    return true;
-}
-
-template <typename T, const unsigned int N>
-T& cover<T,N>::operator[](unsigned int i){
-    return ((T*)this)[i];
-}
-
-template <typename T, const unsigned int N>
-cover<T,N>& cover<T,N>::operator|=(cover &c){
-    for(unsigned int i = 0; i < N; i++)
-        ((T*)this)[i] |= c[i];
-    return *this;
-}
-
-template <typename T, const unsigned int N>
-cover<T,N>& cover<T,N>::operator|(cover &c){
-    static cover<T,N> tmp;
-    for(unsigned int i = 0; i < N; i++)
-        tmp[i] |= ((T*) this)[i] | c[i];
-    return tmp;
-}
-
-template <typename T, const unsigned int N>
-cover<T,N>& cover<T,N>::operator=(cover &c){
-    for(unsigned int i = 0; i < N; i++)
-        ((T*)this)[i] = c[i];
-    return *this;
-}
-
-template <typename T, const unsigned int N>
-cover<T,N>& cover<T,N>::operator=(unsigned int v){
-    unsigned int size = sizeof(T)*8;
-    T* p = (T*) this;
-    for(unsigned int i = 0; i < N && i < (sizeof(unsigned int)/sizeof(T)); i++)
-        ((T*) this)[i] = (T) (v>>(i*size));
-    return *this;
-}
-
-template <typename T, const unsigned int N>
-cover<T,N>& cover<T,N>::operator&=(cover &c){
-    for(unsigned int i = 0; i < N; i++)
-        ((T*)this)[i] &= c[i];
-    return *this;
-}
-
-template <typename T, const unsigned int N>
-cover<T,N>& cover<T,N>::operator^=(cover &c){
-    for(unsigned int i = 0; i < N; i++)
-        ((T*)this)[i] ^= c[i];
-    return *this;
-}
-
-template <typename T, const unsigned int N>
-cover<T,N>& cover<T,N>::operator&(cover &c){
-    static cover<T,N> tmp;
-    for(unsigned int i = 0; i < N; i++)
-        tmp[i] = ((T*)this)[i] & c[i];
-    return tmp;
-}
-
-template <typename T, const unsigned int N>
-cover<T,N>& cover<T,N>::operator^(cover &c){
-    static cover<T,N> tmp;
-    for(unsigned int i = 0; i < N; i++)
-        tmp[i] = ((T*)this)[i] ^ c[i];
-    return tmp;
-}
+        void init(void *, unsigned int);
+        void set_list_size(unsigned int);
+        cover& operator[](unsigned int);
+    private:
+        unsigned int size;
+        unsigned int cover_size;
+        cover *covers;
+};
 
 #endif
