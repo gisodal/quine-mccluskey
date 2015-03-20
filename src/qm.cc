@@ -396,7 +396,7 @@ int qm<M>::quine_mccluskey(void *data){
 
 template <typename M>
 template <typename T>
-inline unsigned int qm<M>::get_weight(cube_t<T> &c, const T &MASK){
+inline unsigned int qm<M>::get_weight(cube_t<T> &c, const T &MASK) const{
     T cover = (~(c[1])) & MASK;
     unsigned int weight = bitcount(cover);
     weight = (weight==1?0:weight);
@@ -408,15 +408,15 @@ template <typename M>
 template <typename P, typename T>
 int qm<M>::reduce(void *data, unsigned int PRIMES){
     const unsigned int MODELS = models.size();
-    cube_t<P>* prime = (cube_t<P>*) data;
-    uint16_t *chart_size = (uint16_t*) (prime+PRIMES);
-    uint32_t *chart_offset = (uint32_t*) (chart_size+MODELS);
-    T *prime_mask = (T*) (chart_offset+MODELS);
-    unsigned int *prime_weight = (unsigned int*) (prime_mask+MODELS*3);
-    T *chart = (T*) (prime_weight+MODELS);
-    memset((void*)prime_mask,0,sizeof(T)*MODELS+sizeof(unsigned int)*MODELS);
+    cube_t<P>* primes = (cube_t<P>*) data;                        // cube_t primes[PRIMES]
+    uint16_t *prime_weight = (uint16_t*) (primes+PRIMES);          // int prime_weight[PRIMES]
+    T *prime_cover = (T*) (prime_weight+PRIMES);                  // cover prime_cover[PRIMES]
+    uint16_t *chart_size = (uint16_t*) (prime_cover+PRIMES);      // int chart_size[MODELS]
+    uint32_t *chart_offset = (uint32_t*) (chart_size+MODELS);     // int chart_offset[MODELS]
+    T *chart = (T*) (chart_offset+MODELS);                         // int chart[MODELS]
 
-    sort(prime, prime+PRIMES);
+    memset((void*)prime_cover,0,sizeof(T)*MODELS+sizeof(unsigned int)*MODELS);
+    sort(primes, primes+PRIMES);
 
     // make prime chart
     unsigned int CHART_SIZE = 0;
@@ -424,8 +424,8 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
         chart_offset[i] = CHART_SIZE;
         chart_size[i] = 0;
         for(unsigned int p = 0; p < PRIMES; p++){
-            if((models[i] & (~prime[p][1])) == prime[p][0]){
-                prime_mask[p] |= 1<<i;
+            if((models[i] & (~primes[p][1])) == primes[p][0]){
+                prime_cover[p] |= 1<<i;
                 chart[CHART_SIZE++] = p;
                 chart_size[i]++;
             }
@@ -454,9 +454,9 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
             }
 
             if(insert){
-                cover &= ~prime_mask[p];
+                cover &= ~prime_cover[p];
                 essentials[essential_size++] = p;
-                weight += 1 + get_weight<P>(prime[p],MASK);
+                weight += 1 + get_weight<P>(primes[p],MASK);
             }
         }
     }
@@ -490,7 +490,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
                         stack[depth][1] = i;
 
                         // compute weight
-                        weights[depth+1] = weights[depth] + get_weight<P>(prime[p], MASK) + 1;
+                        weights[depth+1] = weights[depth] + get_weight<P>(primes[p], MASK) + 1;
 
                         // prune
                         if(weights[depth+1] > min_weight){
@@ -498,7 +498,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
                             i--;
                         } else {
                             // update cover
-                            cover = covers[depth] & (~prime_mask[p]);
+                            cover = covers[depth] & (~prime_cover[p]);
 
                             // determine covering
                             if(cover == 0){
@@ -525,7 +525,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
                                 //    unsigned int p = chart[chart_offset[stack[d][1]]+stack[d][0]];
                                 //    if(i == essential_size)
                                 //        printf("|");
-                                //    printf(" %d:%d:(%d, %d)", p, get_weight(prime[p],MASK), prime[p][0], prime[p][1]);
+                                //    printf(" %d:%d:(%d, %d)", p, get_weight(primes[p],MASK), primes[p][0], primes[p][1]);
                                 //} printf("\n");
 
                                 stack[depth][0]++;
@@ -539,8 +539,10 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
                     } else {
                         // if depth < 0, quit!
                         depth--;
-                        stack[depth][0]++;
-                        i = stack[depth][1]-1;
+                        if(depth >= 0){
+                            stack[depth][0]++;
+                            i = stack[depth][1]-1;
+                        }
                     }
                     break;
                 }
@@ -555,9 +557,9 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
     sort(essentials, essentials+essential_size+non_essential_size);
 
     printf("%u\n", max_depth);
-    printf("%u: ", min_weight);
+    printf("%u:", min_weight);
     for(unsigned int i = 0; i < essential_size+non_essential_size; i++){
-        printf(" %u:(%lu, %lu)", get_weight<P>(prime[essentials[i]],MASK), prime[essentials[i]][0], prime[essentials[i]][1]);
+        printf(" %u:(%lu, %lu)", get_weight<P>(primes[essentials[i]],MASK), primes[essentials[i]][0], primes[essentials[i]][1]);
     }
     printf("\n");
 

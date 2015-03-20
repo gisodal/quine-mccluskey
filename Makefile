@@ -41,7 +41,8 @@ ifneq ($(shell hostname | grep 'node[0-9][0-9]'),)
     OPTDFLAG=-O1
 endif
 
-CDFLAGS=$(OPTDFLAG) -g3 -Wall -Wextra -D DEBUG -std=c++11 -rdynamic -Wno-write-strings -Wno-unused-function -Wno-system-headers
+CDFLAGS=$(OPTDFLAG) -ggdb -Wall -Wextra -D DEBUG -std=c++11 -Wno-write-strings -Wno-unused-function -Wno-system-headers
+CDOFLAGS=-O3 $(CDFLAGS)
 
 # ------------------------------------------------------------------------------
 # environment variables
@@ -88,7 +89,7 @@ endif
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) build rebuild debug clean tarball lines help
+.PHONY: all $(PROJECT) build rebuild debug odebug clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -103,8 +104,11 @@ rebuild: clean build
 
 # compile with debug symbols
 debug: CFLAGS = $(CDFLAGS)
-debug: DYNAMIC = -rdynamic
 debug: build
+
+# compile with optimizations and debug symbols
+odebug: CFLAGS = $(CDOFLAGS)
+odebug: build
 
 assembly: CFLAGS += -Wa,-a,-ad
 assembly: build

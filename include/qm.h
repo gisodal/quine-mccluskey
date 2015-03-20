@@ -62,7 +62,7 @@ class qm {
         int solve();
 
 
-        template <typename T> inline unsigned int get_weight(cube_t<T>&, const T&);
+        template <typename T> inline unsigned int get_weight(cube_t<T>&, const T&) const;
         int canonical_primes();
         template <typename T> int compute_primes(void*);
         int compute_reduce(void*, unsigned int);
