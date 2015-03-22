@@ -7,7 +7,6 @@
 #include <limits.h>
 #include "bit.h"
 
-typedef unsigned uint128_t;
 using namespace std;
 
 static inline uint32_t log2(const uint32_t x) { // for x86 and x86-64 architecture
