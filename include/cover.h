@@ -2,75 +2,75 @@
 #define COVER_H
 
 #include <stdlib.h>
+#include <stdint.h>
 
-template <typename T>
-class cover_element {
+#include "cover_element.h"
+
+template <int N>
+class cover {
     public:
-        size_t size() const;
-        unsigned int count() const;
         bool test(unsigned int) const;
+        unsigned int count() const;
         bool none() const;
         bool all() const;
-        void set_all();
+        size_t size();
+        size_t size_of();
+        void set(unsigned int);
         void set_lsb(unsigned int i);
-        void set(unsigned int, bool val = true);
-        bool operator==(const cover_element&) const;
-        cover_element& operator=(unsigned int);
-        cover_element& operator=(const cover_element&);
-        cover_element& operator|=(const cover_element&);
-        cover_element& operator&=(const cover_element&);
-        cover_element& operator^=(const cover_element&);
-        cover_element& operator|(const cover_element&) const;
-        cover_element& operator&(const cover_element&) const;
-        cover_element& operator^(const cover_element&) const;
-    private:
-        T value;
+        void set_all();
+        cover_element_t* get_cover_elements() const;
+        element_t* get_elements() const;
+
+        element_t& operator[](unsigned int) const;
+        bool operator==(const cover&) const;
+        bool operator!=(const cover&) const;
+        cover& operator=(unsigned int);
+        cover& operator=(const cover&);
+        cover& operator|=(const cover&);
+        cover& operator&=(const cover&);
+        cover& operator^=(const cover&);
+        cover& operator|(const cover&) const;
+        cover& operator&(const cover&) const;
+        cover& operator^(const cover&) const;
+
+        bool equals(const cover&) const;
+        cover& assign(unsigned int);
+        cover& assign(const cover&);
+        cover& or_assign(const cover&);
+        cover& and_assign(const cover&);
+        cover& xor_assign(const cover&);
+        cover& _or(const cover&) const;
+        cover& _and(const cover&) const;
+        cover& _xor(const cover&) const;
+};
+
+template <> class cover<0> {
+    public:
+        static cover& cast(void*);
+        static size_t cover_size(const unsigned int n);
+        bool test(unsigned int) const;
+        unsigned int count(const unsigned int) const;
+        bool none(const unsigned int) const;
+        bool all(const unsigned int) const;
+        size_t size(const unsigned int);
+        void set(unsigned int);
+        void set_lsb(unsigned int i);
+        void set_all(const unsigned int);
+        cover_element_t* get_cover_elements() const;
+        element_t* get_elements() const;
+
+        element_t& operator[](unsigned int) const;
+
+        bool equals(const unsigned int,const cover&) const;
+        cover& assign(const unsigned int, unsigned int);
+        cover& assign(const unsigned int, const cover&);
+        cover& or_assign(const unsigned int, const cover&);
+        cover& and_assign(const unsigned int, const cover&);
+        cover& xor_assign(const unsigned int, const cover&);
 };
 
 #include "cover.th"
 
-class cover {
-    public:
-        static unsigned int size(const size_t base, unsigned int n);
-        bool operator==(const unsigned int,const cover&) const;
-        bool test(const unsigned int,unsigned int) const;
-        size_t int size(const unsigned int) const;
-        unsigned int count(const unsigned int) const;
-        bool none(const unsigned int) const;
-        bool all(const unsigned int) const;
-        void set(const unsigned int, unsigned int, bool val = true);
-        void set_lsb(const unsigned int, unsigned int i);
-        void set_all(const unsigned int);
-        cover& operator=(const unsigned int, unsigned int);
-        cover& operator=(const unsigned int, const cover&);
-        cover& operator|=(const unsigned int, const cover&);
-        cover& operator&=(const unsigned int, const cover&);
-        cover& operator^=(const unsigned int, const cover&);
-        cover& operator|(const unsigned int, const cover&) const;
-        cover& operator&(const unsigned int, const cover&) const;
-        cover& operator^(const unsigned int, const cover&) const;
-};
-
-class cover_list {
-    public:
-        class iterator {
-            iterator& operator++(unsigned int);
-            iterator& operator--(unsigned int)
-            iterator& operator=(const void *v, unsigned int s);
-            iterator& operator=(const iterator &it);
-            bool operator!=(const iterator &it) const;
-            bool operator==(const iterator &it) const;
-            cover *element;
-            unsigned int size;
-        };
-
-        void init(void *, unsigned int);
-        void set_list_size(unsigned int);
-        cover& operator[](unsigned int);
-    private:
-        unsigned int size;
-        unsigned int cover_size;
-        cover *covers;
-};
+typedef cover<0> cover_t;
 
 #endif

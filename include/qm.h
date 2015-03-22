@@ -29,6 +29,25 @@ typedef __uint128_t uint128_t;
 #define UINT128_MAX (((__uint128_t)1 << 127) - (__uint128_t)1 + ((__uint128_t)1 << 127))
 #endif
 
+#else
+#include <boost/multiprecision/cpp_int.hpp>
+using boost::multiprecision::uint128_t;
+
+#ifndef INT128_MIN
+#define INT128_MIN  ((uint128_t)0 - ((uint128_t)1 << 126) - ((__int128_t)1 << 126))
+#endif
+
+#ifndef INT128_MAX
+#define INT128_MAX  ((__int128_t)-1 + ((__int128_t)1 << 126) + ((__int128_t)1 << 126))
+#endif
+
+#ifndef UINT128_MAX
+#define UINT128_MAX (((uint128_t)1 << 127) - (uint128_t)1 + ((uint128_t)1 << 127))
+#endif
+
+
+
+
 #endif
 
 template <typename T>

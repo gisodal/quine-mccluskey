@@ -1,0 +1,37 @@
+#ifndef COVER_TH
+#define COVER_TH
+
+//cover<0>& cover<0>::_or(const unsigned int N, const cover &c) const {
+//    array<0> a;
+//    array<6> b;
+//
+//    b.test(3);
+//    a.test(2,3);
+//    a.test(4);
+//    b.test(2,3);
+//    static element_t data[N];
+//    element_t *t = get_elements();
+//    cover &tmp = *((cover*) data);
+//    for(unsigned int i = 0; i < N; i++)
+//        tmp[i] = t[i] | c[i];
+//    return tmp;
+//}
+//
+//cover& cover::_and(const unsigned int N, const cover&) const {
+//    element_t *t = (element_t*) this;
+//    static cover tmp;
+//    for(unsigned int i = 0; i < N; i++)
+//        tmp[i] = t[i] & c[i];
+//    return tmp;
+//}
+//
+//cover& cover::_xor(const unsigned int N, const cover&) const {
+//    element_t *t = (element_t*) this;
+//    static cover tmp;
+//    for(unsigned int i = 0; i < N; i++)
+//        tmp[i] = t[i] | c[i];
+//    return tmp;
+//}
+
+
+#endif
