@@ -13,7 +13,7 @@
 # see 'Makefile' for more information
 
 # project name
-PROJECT=qm
+PROJECT=
 
 # project version
 VERSION=1
@@ -26,12 +26,13 @@ INCLUDE_DIR=
 
 # static and shared libraries to be linked (space separated values)
 STATIC_LIBRARIES=
-SHARED_LIBRARIES=readline termcap pthread
+SHARED_LIBRARIES=
 
 # compiler
 CC=g++
 EXT=cc
-CFLAGS=-O3 -w -std=c++11
+CXXFLAGS=-std=c++11
+CFLAGS=-O3 -w $(CXXFLAGS)
 
 OPTDFLAG=-O0
 ifeq ($(shell hostname),fs.lgm)
@@ -41,12 +42,13 @@ ifneq ($(shell hostname | grep 'node[0-9][0-9]'),)
     OPTDFLAG=-O1
 endif
 
-CDFLAGS=$(OPTDFLAG) -ggdb -Wall -Wextra -D DEBUG -std=c++11 -Wno-write-strings -Wno-unused-function -Wno-system-headers
-CDOFLAGS=-O3 $(CDFLAGS)
+CDFLAGS=-ggdb -Wall -Wextra -D DEBUG -Wno-write-strings -Wno-unused-function -Wno-system-headers $(CXXFLAGS)
 
 # ------------------------------------------------------------------------------
 # environment variables
 # ------------------------------------------------------------------------------
+
+CDOFLAGS=-O3 $(CDFLAGS)
 
 # use bash instead of sh
 SHELL=/bin/bash
@@ -59,6 +61,11 @@ SDIR=src
 IDIR=include
 TDIR=tar
 DIR=$(shell cd "$( dirname "$0" )" && pwd)
+
+# containting directory is default project name
+ifeq ($(PROJECT),)
+	PROJECT=$(shell basename $(DIR))
+endif
 
 # sources, objects and dependecies
 SRCS=$(wildcard $(SDIR)/*.$(EXT))
@@ -137,7 +144,7 @@ $(TDIR):
 # create a tarball from source files
 tarball: TARFILE=$$(echo $(TDIR)/$(PROJECT)_$$(date +"%Y_%m_%d_%H_%M_%S") | tr -d ' ').tar.xz
 tarball: $(TDIR)
-	@XZ_OPT="-9" tar --exclude=".*" -cvJf $(TARFILE) $(IDIR) $(SDIR) Makefile README; echo;
+	@XZ_OPT="-9" tar --exclude=".*" -cvJf $(TARFILE) $(IDIR) $(SDIR) Makefile README*; echo;
 	@if [ -f $(TARFILE) ]; then                    \
 	     echo "Created file: $(TARFILE)";          \
 	 else                                          \
@@ -161,6 +168,7 @@ help:
 	@echo "    build*   : compile"
 	@echo "    rebuild  : recompile"
 	@echo "    debug    : compile with debug symbols"
+	@echo "    odebug   : compile with optimizations and debug symbols"
 	@echo "    lines    : print #lines of code to compile"
 	@echo "    clean    : remove object files and binary"
 	@echo "    tarball  : create tarball of source files"
