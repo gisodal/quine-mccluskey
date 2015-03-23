@@ -45,9 +45,6 @@ using boost::multiprecision::uint128_t;
 #define UINT128_MAX (((uint128_t)1 << 127) - (uint128_t)1 + ((uint128_t)1 << 127))
 #endif
 
-
-
-
 #endif
 
 template <typename T>
@@ -80,13 +77,11 @@ class qm {
         void clear();
         int solve();
 
-
-        template <typename T> inline unsigned int get_weight(cube_t<T>&, const T&) const;
         int canonical_primes();
         template <typename T> int compute_primes(void*);
-        int compute_reduce(void*, unsigned int);
         template <typename T> int quine_mccluskey(void*);
         template <typename P, typename T> int reduce(void*, unsigned int);
+        template <typename T> inline unsigned int get_weight(cube_t<T>&, const T&) const;
         size_t required_size();
 
         int unate_cover();

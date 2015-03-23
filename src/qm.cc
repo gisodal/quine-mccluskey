@@ -200,8 +200,8 @@ int qm<M>::compute_primes(void *data){
     if(PRIMES > 0){
         unsigned int MODELS = models.size();
         if(MODELS <= 8){
-        //    return reduce<T,uint8_t>(data,PRIMES);
-        //} else if(MODELS <= UINT16_MAX){
+            return reduce<T,uint8_t>(data,PRIMES);
+        } else if(MODELS <= 16){
             return reduce<T,uint16_t>(data,PRIMES);
         } else if(MODELS <= 32){
             return reduce<T,uint32_t>(data,PRIMES);

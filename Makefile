@@ -42,7 +42,7 @@ ifneq ($(shell hostname | grep 'node[0-9][0-9]'),)
     OPTDFLAG=-O1
 endif
 
-CDFLAGS=-ggdb -Wall -Wextra -D DEBUG -Wno-write-strings -Wno-unused-function -Wno-system-headers $(CXXFLAGS)
+CDFLAGS=-ggdb -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers $(CXXFLAGS)
 
 # ------------------------------------------------------------------------------
 # environment variables

@@ -3,6 +3,7 @@
 
 #include "cover.h"
 
+template <typename T>
 class cover_list {
     public:
 //        class iterator {
@@ -16,19 +17,23 @@ class cover_list {
 //            cover_t *element;
 //        };
 
+        void init();
         static size_t bytes(unsigned int,unsigned int);
         static cover_list& cast(void*);
         void set_size(unsigned int);
         void set_cover_size(unsigned int);
         unsigned int cover_size();
         unsigned int size();
-        cover_t& operator[](unsigned int);
+        cover<T,0>& operator[](unsigned int);
     private:
         unsigned int SIZE;
         unsigned int COVER_SIZE;
-        cover_t covers[];
+        cover<T,0> covers[];
 };
 
-typedef cover_list cover_list_t;
+#include "cover_list.th"
+
+typedef cover_list<uint32_t> cover_list_t;
 
 #endif
+
