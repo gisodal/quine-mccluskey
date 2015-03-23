@@ -7,6 +7,8 @@
 #include <limits.h>
 #include "bit.h"
 
+#include "cover.h"
+
 using namespace std;
 
 static inline uint32_t log2(const uint32_t x) { // for x86 and x86-64 architecture
@@ -203,13 +205,8 @@ int qm<M>::compute_primes(void *data){
             return reduce<T,uint8_t>(data,PRIMES);
         } else if(MODELS <= 16){
             return reduce<T,uint16_t>(data,PRIMES);
-        } else if(MODELS <= 32){
+        } else
             return reduce<T,uint32_t>(data,PRIMES);
-        } else if(MODELS <= 64){
-            return reduce<T,uint64_t>(data,PRIMES);
-        } else if(MODELS <= 128){
-            return reduce<T,uint128_t>(data,PRIMES);
-        } else return -1;
     }
     return PRIMES;
 }
@@ -334,7 +331,7 @@ int qm<M>::quine_mccluskey(void *data){
 
 template <typename M>
 template <typename T>
-inline unsigned int qm<M>::get_weight(cube_t<T> &c, const T &MASK) const{
+inline unsigned int qm<M>::get_weight(cube_t<T> &c, const T &MASK) const {
     T cover = (~(c[1])) & MASK;
     unsigned int weight = bitcount(cover);
     weight = (weight==1?0:weight);
@@ -346,14 +343,20 @@ template <typename M>
 template <typename P, typename T>
 int qm<M>::reduce(void *data, unsigned int PRIMES){
     const unsigned int MODELS = models.size();
-    cube_t<P>* primes = (cube_t<P>*) data;                        // cube_t primes[PRIMES]
-    uint16_t *prime_weight = (uint16_t*) (primes+PRIMES);          // int prime_weight[PRIMES]
-    T *prime_cover = (T*) (prime_weight+PRIMES);                  // cover prime_cover[PRIMES]
-    uint16_t *chart_size = (uint16_t*) (prime_cover+PRIMES);      // int chart_size[MODELS]
-    uint32_t *chart_offset = (uint32_t*) (chart_size+MODELS);     // int chart_offset[MODELS]
-    T *chart = (T*) (chart_offset+MODELS);                         // int chart[MODELS]
+    cube_t<P>* primes = (cube_t<P>*) data;                                    // cube_t primes[PRIMES]
+    uint16_t *prime_weight = (uint16_t*) (primes+PRIMES);                     // int prime_weight[PRIMES]
 
-    memset((void*)prime_cover,0,sizeof(T)*MODELS+sizeof(unsigned int)*MODELS);
+    cover_list<T> &prime_cover = cover_list<T>::cast(prime_weight+PRIMES);  // cover prime_cover[PRIMES]
+    prime_cover.set_size(PRIMES);
+    unsigned int N = cover<T,0>::cover_size(MODELS);
+    prime_cover.set_cover_size(N);
+
+    prime_cover.init(~0u);
+
+    uint16_t *chart_size = (uint16_t*) prime_cover.end();        // int chart_size[MODELS]
+    uint32_t *chart_offset = (uint32_t*) (chart_size+MODELS);                 // int chart_offset[MODELS]
+    T *chart = (T*) (chart_offset+MODELS);                                    // int chart[MODELS]
+
     sort(primes, primes+PRIMES);
 
     // make prime chart
@@ -363,7 +366,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
         chart_size[i] = 0;
         for(unsigned int p = 0; p < PRIMES; p++){
             if((models[i] & (~primes[p][1])) == primes[p][0]){
-                prime_cover[p] |= 1<<i;
+                prime_cover[p].clear(i);
                 chart[CHART_SIZE++] = p;
                 chart_size[i]++;
             }
@@ -371,14 +374,15 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
     }
 
     // identify essential implicates and remove the models they cover
-    const T COVER = (T) ((1 << (MODELS-1))-1) | (1 << (MODELS-1));   // (1 << 32)-1 = 0 !!
-    const P MASK = (T)((1 << (variables.size()-1))-1) | (1 << (variables.size()-1));
-    T cover = COVER;
+    const P MASK = ((P)1 << variables.size()) -1;
+    cover<T,0> &cvr = cover<T,0>::cast(alloca((cover<T,0>::bytes(N))));
+    cvr.init(0,N);
+    cvr.set_lsb(MODELS);
     //unsigned int *essentials = (unsigned int*) alloca(sizeof(unsigned int)*PRIMES);
-    unsigned int *essentials = (unsigned int*) malloc(sizeof(unsigned int)*PRIMES);
+    unsigned int *essentials = (unsigned int*) alloca(sizeof(unsigned int)*PRIMES);
     unsigned int essential_size = 0;
     unsigned weight = 0;
-    for(unsigned int i = 0; i < MODELS && cover; i++){
+    for(unsigned int i = 0; i < MODELS && !cvr.none(N); i++){
         if(chart_size[i] == 1){
             unsigned int p = chart[chart_offset[i]];
 
@@ -392,7 +396,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
             }
 
             if(insert){
-                cover &= ~prime_cover[p];
+                cvr.and_assign(prime_cover[p],N);
                 essentials[essential_size++] = p;
                 weight += 1 + get_weight<P>(primes[p],MASK);
             }
@@ -401,18 +405,23 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
 
     // find minimal prime implicate representation
     unsigned int non_essential_size = 0;
-    unsigned int min_weight = ~0;
+    unsigned int min_weight = ~0u;
     unsigned int max_depth = 0;
-    if(cover != 0){
+    if(cvr.any(N)){
         unsigned int *non_essentials = essentials+essential_size;
-        T *covers = (T*) alloca(sizeof(T)*(MODELS)+sizeof(cube_t<P>)*(PRIMES));
-        if(!covers){
+        //void *data = alloca((cover<T,0>::bytes(N))*PRIMES+sizeof(uint16_t)*PRIMES);
+        void *data = malloc((cover<T,0>::bytes(N))*PRIMES+sizeof(uint16_t)*PRIMES);
+        cover_list<T> &covers = cover_list<T>::cast(data);
+        if(!covers.begin()){
             printf("failed to allocate covers\n");
             return -1;
         }
-        unsigned int *weights = (unsigned int*) covers + PRIMES;
+        covers.set_cover_size(N);
+        covers.set_size(PRIMES);
 
-        covers[0] = cover;
+        uint16_t *weights = (uint16_t*) covers.end();
+
+        covers[0].assign(cvr,N);
         weights[0] = weight;
 
         cube_t<T> stack[100]; // cube_t(prime index (< PRIMES), i (< max depth))
@@ -421,7 +430,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
         int i = 0;
         stack[depth][0] = 0;
         while(depth >= 0){
-            if(is_set_bit(covers[depth],i)){
+            if(covers[depth].test(i)){
                 while(true){
                     if(stack[depth][0] < chart_size[i]){
                         unsigned int p = chart[chart_offset[i]+stack[depth][0]];
@@ -436,10 +445,11 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
                             i--;
                         } else {
                             // update cover
-                            cover = covers[depth] & (~prime_cover[p]);
+                            covers[depth+1].assign(covers[depth],N);
+                            covers[depth+1].and_assign(prime_cover[p],N);
 
                             // determine covering
-                            if(cover == 0){
+                            if(covers[depth].none(N)){
                                 // go through more primes on current depth
                                 //unsigned int weight = depth+essentials+1;
                                 //set_min_value(min_weight, weights[depth+1] + (weight==1?-1:0));a
@@ -470,7 +480,6 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
                                 continue;
                             } else { // acquire more primes
                                 depth++;
-                                covers[depth] = cover;
                                 stack[depth][0] = 0;
                             }
                         }

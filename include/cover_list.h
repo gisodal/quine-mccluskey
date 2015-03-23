@@ -17,7 +17,9 @@ class cover_list {
 //            cover_t *element;
 //        };
 
-        void init();
+        void init(const unsigned int);
+        void* begin();
+        void* end();
         static size_t bytes(unsigned int,unsigned int);
         static cover_list& cast(void*);
         void set_size(unsigned int);
@@ -28,12 +30,10 @@ class cover_list {
     private:
         unsigned int SIZE;
         unsigned int COVER_SIZE;
-        cover<T,0> covers[];
+        T covers[];
 };
 
 #include "cover_list.th"
-
-typedef cover_list<uint32_t> cover_list_t;
 
 #endif
 

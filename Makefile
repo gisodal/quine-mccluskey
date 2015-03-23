@@ -32,7 +32,7 @@ SHARED_LIBRARIES=
 CC=g++
 EXT=cc
 CXXFLAGS=-std=c++11
-CFLAGS=-O3 -w $(CXXFLAGS)
+CFLAGS=-O3 -w -fmax-errors=3 $(CXXFLAGS)
 
 OPTDFLAG=-O0
 ifeq ($(shell hostname),fs.lgm)
@@ -42,7 +42,7 @@ ifneq ($(shell hostname | grep 'node[0-9][0-9]'),)
     OPTDFLAG=-O1
 endif
 
-CDFLAGS=-ggdb -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers $(CXXFLAGS)
+CDFLAGS=-ggdb -O0 -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers $(CXXFLAGS)
 
 # ------------------------------------------------------------------------------
 # environment variables

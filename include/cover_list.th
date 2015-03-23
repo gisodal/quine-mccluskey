@@ -1,8 +1,8 @@
 #include "cover_list.h"
 
 template <typename T>
-void cover_list<T>::init(){
-    memset(covers, 0, sizeof(T)*SIZE*COVER_SIZE);
+void cover_list<T>::init(const unsigned int value){
+    memset(covers, (T) value, sizeof(T)*SIZE*COVER_SIZE);
 }
 
 template <typename T>
@@ -27,7 +27,7 @@ unsigned int cover_list<T>::size(){
 
 template <typename T>
 size_t cover_list<T>::bytes(unsigned int models, unsigned int n){
-    return sizeof(cover_list<T>) + cover<T,0>::cover_size(models)*sizeof(cover_element<T>)*n;
+    return sizeof(cover_list<T>) + cover<T,0>::cover_size(models)*sizeof(T)*n;
 }
 
 template <typename T>
@@ -37,6 +37,17 @@ unsigned int cover_list<T>::cover_size(){
 
 template <typename T>
 cover<T,0>& cover_list<T>::operator[](unsigned int i){
-    return *(covers + sizeof(cover_element<T>)*COVER_SIZE*i);
+    return *(cover<T,0>*) (covers + COVER_SIZE*i);
 }
+
+template <typename T>
+void* cover_list<T>::end(){
+    return &(covers[COVER_SIZE*SIZE]);
+}
+
+template <typename T>
+void* cover_list<T>::begin(){
+    return covers;
+}
+
 
