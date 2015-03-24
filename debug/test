@@ -1,7 +1,14 @@
 #!/bin/bash
+
 VARS_MIN=$1
 VARS_MAX=$2
-MODELS_EQ=$3
+MODELS_MIN=$3
+MODELS_MAX=$4
+
+export THREADS_PER_CORE=4
+export JOBS_PER_THREAD=20
+export THREADS=$(($(nproc)*$THREADS_PER_CORE))
+export JOBS=$(($THREADS*$JOBS_PER_THREAD))
 
 export DIR=$( cd "$( dirname "$0" )/.." && pwd )
 
@@ -21,40 +28,6 @@ export -f CtoM;
 function binary(){
     return eval "printf '%0${1}d' $(echo 'obase=2;$2' | bc)" | sed 's:\(.\):\1\ :g'
 }
-
-function set_permutations(){
-    local MODELS=$1
-    local ones=$2
-    local C=()
-    for ((i = 0; i < $ones; i++)); do
-        C[$i]=1
-    done
-    for ((i = $ones; i < $MODELS; i++)); do
-        C[$i]=0
-    done
-
-    count=0
-    local M=()
-    while [ 1 ]; do
-        M[$count]=$(CtoM ${C[@]})
-
-        changed=0
-        for ((i = 0; i < ${#C[@]}-1; i++)); do
-            j=$(($i+1))
-            if [ ${C[$i]} -eq 1 -a ${C[$j]} -eq 0 ]; then
-                C[$i]=0
-                C[$j]=1
-                changed=1
-                break
-            fi
-        done
-        [ $changed -eq 0 ] && break
-
-        count=$((count+1))
-    done
-    echo "${M[@]}"
-}
-export -f set_permutations;
 
 function run(){
     local vars=$1
@@ -76,23 +49,82 @@ function run(){
 }
 export -f run;
 
-function runall(){
+function run_parallel(){
+    local vars=$1
+    local size=$2
+    local M=( $3 )
+
+    for ((i=0; i < ${#M[@]}; i++)); do
+        run $vars ${M[$i]}
+    done
+}
+export -f run_parallel
+
+function run_all(){
     local vars=$1
     local models=$2
     local ones=$3
 
     echo "  ($ones/$models)"
-    parallel --load 100% -k run $vars {} ::: $(set_permutations $models $ones)
+
+    local C=()
+    for ((i = 0; i < $ones; i++)); do
+        C[$i]=1
+    done
+    for ((i = $ones; i < $models; i++)); do
+        C[$i]=0
+    done
+
+    local count=0
+    local M=()
+    local m
+    while [ 1 ]; do
+        m=$(($count / $JOBS_PER_THREAD))
+        M[$m]="${M[$m]} $(CtoM ${C[@]})"
+
+        local changed=0
+        for ((i = 0; i < ${#C[@]}-1; i++)); do
+            j=$(($i+1))
+            if [ ${C[$i]} -eq 1 -a ${C[$j]} -eq 0 ]; then
+                C[$i]=0
+                C[$j]=1
+                changed=1
+                break
+            fi
+        done
+        count=$((count+1))
+
+        if [ $changed -eq 0 ]; then
+            if [ $count -gt 0 ]; then
+                parallel -k --jobs 0 run_parallel $vars $JOBS_PER_THREAD {} ::: "${M[@]}"
+            fi
+            break
+        fi
+
+        if [ $count -ge $JOBS ]; then
+            parallel --jobs 0 run_parallel $vars $JOBS_PER_THREAD {} ::: "${M[@]}"
+            count=0;
+            M=()
+        fi
+    done
 }
-export -f runall;
+export -f run_all;
 
 for ((VARS=VARS_MIN; VARS < VARS_MAX; VARS++)); do
     echo "===> VARIABLES: $VARS"
     export MODELS=$(echo "2^$VARS" | bc)
 
-    sequence=$(seq 2 $(($MODELS-1)))
-    [ "$MODELS_EQ" != "" ] && sequence=$MODELS_EQ
-    parallel --load 100% -k runall $VARS $MODELS {} ::: $sequence
+    if [ "$MODELS_MIN" != "" ] && [ "$MODELS_MAX" == "" ]; then
+            run_all $VARS $MODELS $MODELS_MIN
+    elif [ "$MODELS_MIN" != "" ] && [ "$MODELS_MAX" != "" ]; then
+        for ((s=$MODELS_MIN; s < $MODELS_MAX; s++)); do
+            run_all $VARS $MODELS $s
+        done
+    else
+        for ((s=2; s < $MODELS; s++)); do
+            run_all $VARS $MODELS $s
+        done
+    fi
 done
 echo
 
