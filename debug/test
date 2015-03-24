@@ -60,7 +60,7 @@ function run(){
     local vars=$1
     local m=$2
     local PYOUTPUT=$($DIR/pylibs/qm.py -v$vars -o$m)
-    local COUTPUT=$($DIR/bin/qm -v$vars -o$m)
+    local COUTPUT=$($DIR/bin/* -v$vars -o$m)
 
     local SOLUTION=$(echo -e "$PYOUTPUT" | grep "$(echo -e "$COUTPUT"| tail -1)")
     if [ "$COUTPUT" == "" -o "$SOLUTION" == "" ]; then
