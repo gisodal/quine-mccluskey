@@ -27,7 +27,7 @@ unsigned int cover_list<T>::size(){
 
 template <typename T>
 size_t cover_list<T>::bytes(unsigned int models, unsigned int n){
-    return sizeof(cover_list<T>) + cover<T,0>::cover_size(models)*sizeof(T)*n;
+    return sizeof(cover_list<T>) + cover<T,0>::cover_size(models)*sizeof(cover_element<T>)*n;
 }
 
 template <typename T>

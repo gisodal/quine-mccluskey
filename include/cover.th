@@ -176,7 +176,7 @@ size_t cover<T,0>::cover_size(unsigned int N){
 
 template <typename T>
 size_t cover<T,0>::bytes(unsigned int N){
-    return sizeof(cover_element<T>)*N;
+    return sizeof(T)*N;
 }
 
 template <typename T>

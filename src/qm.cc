@@ -410,9 +410,10 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
     if(cvr.any(N)){
         unsigned int *non_essentials = essentials+essential_size;
         //void *data = alloca((cover<T,0>::bytes(N))*PRIMES+sizeof(uint16_t)*PRIMES);
-        void *data = malloc((cover<T,0>::bytes(N))*PRIMES+sizeof(uint16_t)*PRIMES);
-        cover_list<T> &covers = cover_list<T>::cast(data);
-        if(!covers.begin()){
+        size_t covers_size_t = cover_list<T>::bytes(MODELS, N);
+        void *d = malloc(covers_size_t*PRIMES+sizeof(uint16_t)*PRIMES);
+        cover_list<T> &covers = cover_list<T>::cast(d);
+        if(!&covers){
             printf("failed to allocate covers\n");
             return -1;
         }
@@ -449,7 +450,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
                             covers[depth+1].and_assign(prime_cover[p],N);
 
                             // determine covering
-                            if(covers[depth].none(N)){
+                            if(covers[depth+1].none(N)){
                                 // go through more primes on current depth
                                 //unsigned int weight = depth+essentials+1;
                                 //set_min_value(min_weight, weights[depth+1] + (weight==1?-1:0));a
@@ -496,6 +497,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
             }
             i++;
         }
+        free(d);
     }
 
     if(min_weight == (unsigned int) ~0){
