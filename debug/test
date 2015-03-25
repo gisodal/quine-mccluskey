@@ -5,8 +5,9 @@ VARS_MAX=$2
 MODELS_MIN=$3
 MODELS_MAX=$4
 
-export THREADS_PER_CORE=4
-export JOBS_PER_THREAD=20
+export JOBS_PER_THREAD=25
+export THREADS_PER_CORE=6
+export THREADS_PER_CORE_OPT="${THREADS_PER_CORE}00%"
 export THREADS=$(($(nproc)*$THREADS_PER_CORE))
 export JOBS=$(($THREADS*$JOBS_PER_THREAD))
 
@@ -96,13 +97,13 @@ function run_all(){
 
         if [ $changed -eq 0 ]; then
             if [ $count -gt 0 ]; then
-                parallel -k --jobs 0 run_parallel $vars $JOBS_PER_THREAD {} ::: "${M[@]}"
+                parallel -k --jobs $THREADS_PER_CORE_OPT run_parallel $vars $JOBS_PER_THREAD {} ::: "${M[@]}"
             fi
             break
         fi
 
         if [ $count -ge $JOBS ]; then
-            parallel --jobs 0 run_parallel $vars $JOBS_PER_THREAD {} ::: "${M[@]}"
+            parallel --jobs $THREADS_PER_CORE_OPT run_parallel $vars $JOBS_PER_THREAD {} ::: "${M[@]}"
             count=0;
             M=()
         fi
