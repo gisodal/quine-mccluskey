@@ -32,7 +32,7 @@ SHARED_LIBRARIES =
 CC       = g++
 EXT      = cc
 CXXFLAGS = -std=c++11
-CFLAGS   = -w -fmax-errors=3
+CFLAGS   = -w
 CDFLAGS  = -ggdb -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers
 O        = -O3
 
