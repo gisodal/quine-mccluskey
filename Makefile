@@ -13,54 +13,44 @@
 # see 'Makefile' for more information
 
 # project name
-PROJECT=
+PROJECT =
 
 # project version
-VERSION=1
-SUBVERSION=0
-PATCHLEVEL=0
+VERSION    = 1
+SUBVERSION = 0
+PATCHLEVEL = 0
 
 # library and include paths (space separated value)
-LIBRARY_DIR=
-INCLUDE_DIR=
+LIBRARY_DIR =
+INCLUDE_DIR =
 
 # static and shared libraries to be linked (space separated values)
-STATIC_LIBRARIES=
-SHARED_LIBRARIES=
+STATIC_LIBRARIES =
+SHARED_LIBRARIES =
 
 # compiler
-CC=g++
-EXT=cc
-CXXFLAGS=-std=c++11
-CFLAGS=-O3 -w -fmax-errors=3 $(CXXFLAGS)
-
-OPTDFLAG=-O0
-ifeq ($(shell hostname),fs.lgm)
-	OPTFLAG=-O1
-endif
-ifneq ($(shell hostname | grep 'node[0-9][0-9]'),)
-    OPTDFLAG=-O1
-endif
-
-CDFLAGS=-ggdb -O0 -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers $(CXXFLAGS)
+CC       = g++
+EXT      = cc
+CXXFLAGS = -std=c++11
+CFLAGS   = -w -fmax-errors=3
+CDFLAGS  = -ggdb -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers
+O        = -O3
 
 # ------------------------------------------------------------------------------
 # environment variables
 # ------------------------------------------------------------------------------
 
-CDOFLAGS=-O3 $(CDFLAGS)
-
 # use bash instead of sh
 SHELL=/bin/bash
 
 # directories
-BDIR=bin
-LDIR=lib
-ODIR=obj
-SDIR=src
-IDIR=include
-TDIR=tar
-DIR=$(shell cd "$( dirname "$0" )" && pwd)
+BDIR = bin
+LDIR = lib
+ODIR = obj
+SDIR = src
+IDIR = include
+TDIR = tar
+DIR  = $(shell cd "$( dirname "$0" )" && pwd)
 
 # containting directory is default project name
 ifeq ($(PROJECT),)
@@ -68,27 +58,27 @@ ifeq ($(PROJECT),)
 endif
 
 # sources, objects and dependecies
-SRCS=$(wildcard $(SDIR)/*.$(EXT))
-OBJS=$(patsubst $(SDIR)/%.$(EXT),$(ODIR)/%.o,$(SRCS))
-DEPS=$(OBJS:.o=.d)
+SRCS = $(wildcard $(SDIR)/*.$(EXT))
+OBJS = $(patsubst $(SDIR)/%.$(EXT),$(ODIR)/%.o,$(SRCS))
+DEPS = $(OBJS:.o=.d)
 
 # library / include paths
-INCLUDE_DIR+=$(IDIR)
-LIB=$(foreach d, $(LIBRARY_DIR),-L$d)
-INC=$(foreach d, $(INCLUDE_DIR),-I$d)
+INCLUDE_DIR += $(IDIR)
+LIB = $(foreach d, $(LIBRARY_DIR),-L$d)
+INC = $(foreach d, $(INCLUDE_DIR),-I$d)
 
 # shared/static libraries to link
-STATIC=$(foreach l, $(STATIC_LIBRARIES),-l$l)
-SHARED=$(foreach l, $(SHARED_LIBRARIES),-l$l)
+STATIC = $(foreach l, $(STATIC_LIBRARIES),-l$l)
+SHARED = $(foreach l, $(SHARED_LIBRARIES),-l$l)
 
 ifneq ($(STATIC),)
-	LIB+=-Wl,-Bstatic $(STATIC)
+	LIB += -Wl,-Bstatic $(STATIC)
 endif
 
 ifneq ($(SHARED),)
-	LIB+=-Wl,-Bdynamic $(SHARED)
+	LIB += -Wl,-Bdynamic $(SHARED)
 else ifneq ($(STATIC),)
-	LIB+=-Wl,-Bdynamic
+	LIB += -Wl,-Bdynamic
 endif
 
 # ------------------------------------------------------------------------------
@@ -96,7 +86,7 @@ endif
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) build rebuild debug odebug clean tarball lines help
+.PHONY: all $(PROJECT) build rebuild debug odebug profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -111,18 +101,24 @@ rebuild: clean build
 
 # compile with debug symbols
 debug: CFLAGS = $(CDFLAGS)
+debug: O = -O0
 debug: build
 
 # compile with optimizations and debug symbols
-odebug: CFLAGS = $(CDOFLAGS)
+odebug: CFLAGS = $(CDFLAGS)
 odebug: build
 
+# compile with profile
+profile: O = -O0 -pg
+profile: build
+
+# compile to assembly
 assembly: CFLAGS += -Wa,-a,-ad
 assembly: build
 
 # create object files and dependencies
 $(ODIR)/%.o: $(SDIR)/%.$(EXT)
-	$(CC) -o $@ -c $< $(CFLAGS) $(INC) -MMD
+	$(CC) -o $@ -c $< $(O) $(CXXFLAGS) $(CFLAGS) $(INC) -MMD
 
 # create (link) executable binary
 $(BDIR)/$(PROJECT): $(ODIR) $(OBJS) $(BDIR)
@@ -142,7 +138,7 @@ $(TDIR):
 	mkdir $(TDIR)
 
 # create a tarball from source files
-tarball: TARFILE=$$(echo $(TDIR)/$(PROJECT)_$$(date +"%Y_%m_%d_%H_%M_%S") | tr -d ' ').tar.xz
+tarball: TARFILE = $$(echo $(TDIR)/$(PROJECT)_$$(date +"%Y_%m_%d_%H_%M_%S") | tr -d ' ').tar.xz
 tarball: $(TDIR)
 	@XZ_OPT="-9" tar --exclude=".*" -cvJf $(TARFILE) $(IDIR) $(SDIR) Makefile README*; echo;
 	@if [ -f $(TARFILE) ]; then                    \
