@@ -47,24 +47,7 @@ using boost::multiprecision::uint128_t;
 
 #endif
 
-template <typename T>
-struct cube_t {
-    T s[2];
-    inline bool operator==(const cube_t &c) const {
-        return s[0] == c.s[0] && s[1] == c.s[1];
-    };
-    inline bool operator!=(const cube_t &c) const {
-        return s[0] != c.s[0] || s[1] != c.s[1];
-    };
-    inline bool operator<(const cube_t &c) const {
-        if(s[0] < c.s[0] || (s[0] == c.s[0] && s[1] < c.s[1]))
-            return true;
-        return false;
-    };
-    inline T& operator[](const int i) {
-        return s[i];
-    };
-};
+#include "cube.h"
 
 template <typename M>
 class qm {
@@ -81,7 +64,7 @@ class qm {
         template <typename T> int compute_primes(void*);
         template <typename T> int quine_mccluskey(void*);
         template <typename P, typename T> int reduce(void*, unsigned int);
-        template <typename T> inline unsigned int get_weight(cube_t<T>&, const T&) const;
+        template <typename T> inline unsigned int get_weight(cube<T>&, const T&) const;
         size_t required_size();
 
         int unate_cover();

@@ -221,11 +221,11 @@ int qm<M>::quine_mccluskey(void *data){
     unsigned int meta_size = GROUPS;
     unsigned int cubes_size = 2*factorial(VARIABLES);
 
-    cube_t<T> *primes = (cube_t<T>*) data;
+    cube<T> *primes = (cube<T>*) data;
     uint32_t *size = (uint32_t*) (primes + MODELS);
     uint32_t *offset = size + 2*meta_size;
     char *check = (char*) (offset + 2*meta_size);
-    cube_t<T> *cubes = (cube_t<T>*) (check + cubes_size);
+    cube<T> *cubes = (cube<T>*) (check + cubes_size);
 
     memset(size, 0, sizeof(uint32_t)*meta_size);
     memset(check, 0, sizeof(uint8_t)*cubes_size);
@@ -254,7 +254,7 @@ int qm<M>::quine_mccluskey(void *data){
 
     // quine-mccluskey
     unsigned int groups = GROUPS-1;
-    cube_t<T> *ccubes = cubes, *ncubes = cubes + cubes_size;
+    cube<T> *ccubes = cubes, *ncubes = cubes + cubes_size;
     uint32_t *csize = size, *nsize = size + meta_size;
     uint32_t *coffset = offset, *noffset = offset + meta_size;
     while(groups){
@@ -268,12 +268,12 @@ int qm<M>::quine_mccluskey(void *data){
                 for(unsigned int j = 0; j < csize[group+1]; j++){
                     unsigned int oj = coffset[group+1]+j;
 
-                    cube_t<T> &ci = ccubes[oi], &cj = ccubes[oj];
+                    cube<T> &ci = ccubes[oi], &cj = ccubes[oj];
                     uint16_t p = ci[0] ^ cj[0];
                     if(ci[1] == cj[1] && is_power_of_two_or_zero(p)){
                         // merge
 
-                        cube_t<T> &co = ncubes[ncubes_size];
+                        cube<T> &co = ncubes[ncubes_size];
                         co[0] = ci[0] & cj[0];
                         co[1] = ci[1] | p;
                         check[oi] = 1;
@@ -321,7 +321,6 @@ int qm<M>::quine_mccluskey(void *data){
         groups--;
     }
 
-    sort(primes, primes+PRIMES);
     for(unsigned int i = 0; i < PRIMES; i++){
         printf(" (%d, %d)", primes[i][0], primes[i][1]);
     }
@@ -331,7 +330,7 @@ int qm<M>::quine_mccluskey(void *data){
 
 template <typename M>
 template <typename T>
-inline unsigned int qm<M>::get_weight(cube_t<T> &c, const T &MASK) const {
+inline unsigned int qm<M>::get_weight(cube<T> &c, const T &MASK) const {
     T cover = (~(c[1])) & MASK;
     unsigned int weight = bitcount(cover);
     weight = (weight==1?0:weight);
@@ -343,7 +342,7 @@ template <typename M>
 template <typename P, typename T>
 int qm<M>::reduce(void *data, unsigned int PRIMES){
     const unsigned int MODELS = models.size();
-    cube_t<P>* primes = (cube_t<P>*) data;                                    // cube_t primes[PRIMES]
+    cube<P>* primes = (cube<P>*) data;                                    // cube primes[PRIMES]
     uint16_t *prime_weight = (uint16_t*) (primes+PRIMES);                     // int prime_weight[PRIMES]
 
     cover_list<T> &prime_cover = cover_list<T>::cast(prime_weight+PRIMES);  // cover prime_cover[PRIMES]
@@ -356,8 +355,6 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
     uint16_t *chart_size = (uint16_t*) prime_cover.end();        // int chart_size[MODELS]
     uint32_t *chart_offset = (uint32_t*) (chart_size+MODELS);                 // int chart_offset[MODELS]
     T *chart = (T*) (chart_offset+MODELS);                                    // int chart[MODELS]
-
-    sort(primes, primes+PRIMES);
 
     // make prime chart
     unsigned int CHART_SIZE = 0;
@@ -425,7 +422,7 @@ int qm<M>::reduce(void *data, unsigned int PRIMES){
         covers[0].assign(cvr,N);
         weights[0] = weight;
 
-        cube_t<T> stack[100]; // cube_t(prime index (< PRIMES), i (< max depth))
+        cube<T> stack[100]; // cube(prime index (< PRIMES), i (< max depth))
         int depth = 0;
 
         int i = 0;

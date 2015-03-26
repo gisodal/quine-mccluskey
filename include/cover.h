@@ -25,6 +25,7 @@ class cover {
         T* get_elements() const;
 
         T& operator[](unsigned int);
+        cover_element<T>& operator()(const unsigned int);
 
         bool equals(cover&,const unsigned int SIZE = N) const;
         cover& assign(unsigned int,const unsigned int SIZE = N);
@@ -69,6 +70,7 @@ class cover<T,0> {
         T* get_elements() const;
 
         T& operator[](const unsigned int);
+        cover_element<T>& operator()(const unsigned int);
 
         bool equals(cover&, const unsigned int) const;
         cover& not_assign(const unsigned int);

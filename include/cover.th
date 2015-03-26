@@ -82,6 +82,11 @@ T& cover<T,N>::operator[](const unsigned int i){
 }
 
 template <typename T, unsigned int N>
+cover_element<T>& cover<T,N>::operator()(const unsigned int i){
+    return ((cover_element<T>*) elements)[i];
+}
+
+template <typename T, unsigned int N>
 size_t cover<T,N>::size(UNUSED const unsigned int SIZE){
     return sizeof(T)*N*8;
 }
@@ -233,6 +238,11 @@ bool cover<T,0>::any(const unsigned int N) const {
 template <typename T>
 T& cover<T,0>::operator[](const unsigned int i){
     return elements[i];
+}
+
+template <typename T>
+cover_element<T>& cover<T,0>::operator()(const unsigned int i){
+    return ((cover_element<T>*) elements)[i];
 }
 
 template <typename T>
