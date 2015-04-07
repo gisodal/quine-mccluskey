@@ -66,6 +66,7 @@ class qm {
         template <typename P, typename T> int reduce(void*, unsigned int);
         template <typename T> inline unsigned int get_weight(cube<T>&, const T&) const;
         size_t required_size();
+        template <typename P> void print_cubes(void *, unsigned int *, unsigned int);
 
         int unate_cover();
         bool valid();
@@ -86,3 +87,4 @@ inline void qm<M>::add_model(M m){
 }
 
 #endif
+

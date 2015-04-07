@@ -285,15 +285,16 @@ class QM:
         return glue.join(array)
 
     or_terms = []
-    for minterm in minterms:
+    for minterm in sorted(list(minterms)):
       and_terms = []
       for j in xrange(len(self.variables)):
         if minterm[0] & 1<<j:
           and_terms.append(self.variables[j])
         elif not minterm[1] & 1<<j:
-          and_terms.append('(NOT %s)' % self.variables[j])
-      or_terms.append(parentheses(' AND ', and_terms))
-    return parentheses(' OR ', or_terms)
+          and_terms.append(u'\u00AC%s' % self.variables[j])
+          #and_terms.append(u'\u00AC%s' % self.variables[j])
+      or_terms.append(parentheses(u' \u2227 ', and_terms))
+    return parentheses(u'  \u2228  ', or_terms)
 
 def bitcount(i):
   """ Count set bits of the input. """
@@ -349,7 +350,7 @@ def main():
     ones = [int(i) for i in opts.ones.split(',') if i]
     variables = int(opts.variables)
 
-    qm = QM([chr(code) for code in xrange(ord('A'),ord('A')+variables)])
+    qm = QM([chr(code) for code in xrange(ord('a'),ord('a')+variables)])
     #stdout.write("variables: "+str(qm.variables)+'\n')
     soln = qm.solve(ones, dc)
     if len(soln) == 0:
@@ -357,12 +358,14 @@ def main():
     elif len(soln) == 1 and soln[0].count('X') == len(soln[0]):
         stdout.write('tautology\n')
     else:
-        #stdout.write(str(soln[0])+":") #+'   f = '+str(qm.get_function(soln[2]))+'\n' )
         for cover in soln[1]:
             stdout.write(str(soln[0])+":")
             for prime in sorted(list(cover)):
                 stdout.write(" "+str(qm.calculate_complexity_term(prime))+":"+str(prime))
             stdout.write("\n")
+
+            f = qm.get_function(cover)
+            stdout.write(f+"\n")
 
 if __name__ == '__main__':
   main()
