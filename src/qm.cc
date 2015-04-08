@@ -162,10 +162,12 @@ size_t qm<M>::required_size(){
     return total_size;
 }
 
+char *stack_data[800000];
+
 template <typename M>
 int qm<M>::canonical_primes(){
     //void *data = alloca(required_size());
-    void *data = malloc(required_size());
+    void *data = stack_data;
     if(!data){
         printf("stack allocation failed at size %u (%.2fMb)\n", required_size(), required_size()/(float)1024);
         return -2;
@@ -195,7 +197,6 @@ int qm<M>::canonical_primes(){
     else return -1;
 
     // TODO: store primes
-    free(data);
     return PRIMES;
 }
 

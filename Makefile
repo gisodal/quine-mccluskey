@@ -70,6 +70,7 @@ endif
 # sources, objects and dependecies
 SRCS = $(wildcard $(SDIR)/*.$(EXT))
 OBJS = $(patsubst $(SDIR)/%.$(EXT),$(ODIR)/%.o,$(SRCS))
+LIBOBJS = $(filter-out $(ODIR)/main.o, $(OBJS))
 DEPS = $(OBJS:.o=.d)
 
 # library / include paths
@@ -91,12 +92,15 @@ else ifneq ($(STATIC),)
 	LIB += -Wl,-Bdynamic
 endif
 
+STATICLIB = lib$(PROJECT).a
+DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
+
 # ------------------------------------------------------------------------------
 # Rules
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) install build rebuild debug odebug static dynamic profile assembly clean tarball lines help
+.PHONY: all $(PROJECT) install build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -122,28 +126,41 @@ odebug: build
 profile: O = -O0 -pg
 profile: build
 
-# install
-install:
-	$(MAKE)
+# install to PREFIX
+install: build
 	mkdir -p $(PREFIX)/bin
-	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin
-	$(MAKE) static
-	rm -r $(ODIR)
-	$(MAKE) dynamic
 	mkdir -p $(PREFIX)/lib$(ARCH)
+	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin
 	cp $(LDIR)/* $(PREFIX)/lib$(ARCH)
 
+# create libraries
+debug-library:
+	$(MAKE) library CFLAGS='$(CDFLAGS)' O='-O0'
+
+library:
+	@echo '==== Creating static library ===='
+	$(RM) -r $(ODIR)
+	$(MAKE) static
+	@echo '==== Creating dynamic library ===='
+	$(RM) -r $(ODIR)
+	$(MAKE) dynamic
+	$(RM) -r $(ODIR)
+
 # create static library
-static: $(ODIR) $(OBJS) $(LDIR)
-	ar rcs $(LDIR)/lib$(PROJECT).a $(filter-out $(ODIR)/main.o, $(OBJS))
+static: $(LDIR)/$(STATICLIB)
+
+$(LDIR)/$(STATICLIB): $(ODIR) $(LIBOBJS) $(LDIR)
+	ar rcs $(LDIR)/$(STATICLIB) $(LIBOBJS)
 
 # create dynamic library
-dynamic: CFLAGS += -fPIC
-dynamic: $(ODIR) $(OBJS) $(LDIR)
-	gcc -shared -Wl,-soname,lib$(PROJECT).so.$(VERSION) -o $(LDIR)/lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL) $(filter-out $(ODIR)/main.o, $(OBJS))
-	ln -sf lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL) $(LDIR)/lib$(PROJECT).so
-	ln -sf lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL) $(LDIR)/lib$(PROJECT).so.$(VERSION)
-	ln -sf lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL) $(LDIR)/lib$(PROJECT).so.$(VERSION).$(SUBVERSION)
+dynamic: $(LDIR)/$(DYNAMICLIB)
+
+$(LDIR)/$(DYNAMICLIB): CFLAGS += -fPIC
+$(LDIR)/$(DYNAMICLIB): $(ODIR) $(LIBOBJS) $(LDIR)
+	gcc -shared -Wl,-soname,lib$(PROJECT).so.$(VERSION) -o $(LDIR)/$(DYNAMICLIB) $(LIBOBJS)
+	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so
+	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so.$(VERSION)
+	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so.$(VERSION).$(SUBVERSION)
 
 # compile to assembly
 assembly: CFLAGS += -Wa,-a,-ad
@@ -202,6 +219,8 @@ help:
 	@echo "    debug    : compile with debug symbols"
 	@echo "    odebug   : compile with optimizations and debug symbols"
 	@echo "    lines    : print #lines of code to compile"
+	@echo "    library  : create libraries"
+	@echo "    install  : install project at PREFIX"
 	@echo "    clean    : remove object files and binary"
 	@echo "    tarball  : create tarball of source files"
 	@echo ""
