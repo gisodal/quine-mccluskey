@@ -156,7 +156,7 @@ size_t qm<M>::required_size(){
 
     unsigned int total_size = sizeof(uint64_t)*2*cubes_size + sizeof(uint32_t)*(MODELS+2*2*meta_size) + sizeof(char)*cubes_size;
     if(total_size >= 800000){
-        fprintf(stderr, "compute_primesot fit > 8Mb onto stack!\n");
+        fprintf(stderr, "space required > 8Mb onto stack!\n");
         exit(1);
     }
     return total_size;
