@@ -28,6 +28,9 @@ INCLUDE_DIR =
 STATIC_LIBRARIES =
 SHARED_LIBRARIES =
 
+# install
+PREFIX = $(shell cd "$( dirname "$0" )" && cd ../.. && pwd)
+
 # compiler
 CC       = g++
 EXT      = cc
@@ -50,11 +53,18 @@ ODIR = obj
 SDIR = src
 IDIR = include
 TDIR = tar
+UDIR = usr
 DIR  = $(shell cd "$( dirname "$0" )" && pwd)
+ARCH = $(shell getconf LONG_BIT)
 
 # containting directory is default project name
 ifeq ($(PROJECT),)
 	PROJECT=$(shell basename $(DIR))
+endif
+
+# install dir
+ifeq ($(PREFIX),)
+	PREFIX=usr
 endif
 
 # sources, objects and dependecies
@@ -86,7 +96,7 @@ endif
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) build rebuild debug odebug static dynamic profile assembly clean tarball lines help
+.PHONY: all $(PROJECT) install build rebuild debug odebug static dynamic profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -111,6 +121,17 @@ odebug: build
 # compile with profile
 profile: O = -O0 -pg
 profile: build
+
+# install
+install:
+	$(MAKE)
+	mkdir -p $(PREFIX)/bin
+	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin
+	$(MAKE) static
+	rm -r $(ODIR)
+	$(MAKE) dynamic
+	mkdir -p $(PREFIX)/lib$(ARCH)
+	cp $(LDIR)/* $(PREFIX)/lib$(ARCH)
 
 # create static library
 static: $(ODIR) $(OBJS) $(LDIR)
