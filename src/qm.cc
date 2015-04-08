@@ -185,10 +185,14 @@ int qm<M>::canonical_primes(){
     } else if(VARIABLES <= 64){
         cube_size = 64;
         PRIMES = compute_primes<uint64_t>(data);
-    } else if(VARIABLES <= 128){
+    }
+    #if __LP64__
+    else if(VARIABLES <= 128){
         cube_size = 128;
         PRIMES = compute_primes<uint128_t>(data);
-    } else return -1;
+    }
+    #endif
+    else return -1;
 
     // TODO: store primes
     free(data);
@@ -548,12 +552,14 @@ template class qm<uint8_t>;
 template class qm<uint16_t>;
 template class qm<uint32_t>;
 template class qm<uint64_t>;
-template class qm<uint128_t>;
 
 template class cover_element<uint8_t>;
 template class cover_element<uint16_t>;
 template class cover_element<uint32_t>;
 template class cover_element<uint64_t>;
-template class cover_element<uint128_t>;
 
+#if __LP64__
+template class qm<uint128_t>;
+template class cover_element<uint128_t>;
+#endif
 
