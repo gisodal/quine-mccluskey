@@ -550,3 +550,10 @@ template class qm<uint32_t>;
 template class qm<uint64_t>;
 template class qm<uint128_t>;
 
+template class cover_element<uint8_t>;
+template class cover_element<uint16_t>;
+template class cover_element<uint32_t>;
+template class cover_element<uint64_t>;
+template class cover_element<uint128_t>;
+
+
