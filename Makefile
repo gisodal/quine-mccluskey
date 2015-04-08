@@ -86,7 +86,7 @@ endif
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) build rebuild debug odebug profile assembly clean tarball lines help
+.PHONY: all $(PROJECT) build rebuild debug odebug static dynamic profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -112,6 +112,18 @@ odebug: build
 profile: O = -O0 -pg
 profile: build
 
+# create static library
+static: $(ODIR) $(OBJS) $(LDIR)
+	ar rcs $(LDIR)/lib$(PROJECT).a $(filter-out $(ODIR)/main.o, $(OBJS))
+
+# create dynamic library
+dynamic: CFLAGS += -fPIC
+dynamic: $(ODIR) $(OBJS) $(LDIR)
+	gcc -shared -Wl,-soname,lib$(PROJECT).so.$(VERSION) -o $(LDIR)/lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL) $(filter-out $(ODIR)/main.o, $(OBJS))
+	ln -sf lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL) $(LDIR)/lib$(PROJECT).so
+	ln -sf lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL) $(LDIR)/lib$(PROJECT).so.$(VERSION)
+	ln -sf lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL) $(LDIR)/lib$(PROJECT).so.$(VERSION).$(SUBVERSION)
+
 # compile to assembly
 assembly: CFLAGS += -Wa,-a,-ad
 assembly: build
@@ -125,6 +137,9 @@ $(BDIR)/$(PROJECT): $(ODIR) $(OBJS) $(BDIR)
 	$(CC) -o $@ $(OBJS) $(LIB) $(DYNAMIC)
 
 # create directories
+$(LDIR):
+	mkdir $(LDIR)
+
 $(BDIR):
 	mkdir $(BDIR)
 
@@ -153,7 +168,7 @@ lines:
 
 # cleanup
 clean:
-	$(RM) -r $(ODIR) $(BDIR)
+	$(RM) -r $(ODIR) $(BDIR) $(LDIR)
 
 # echo make options
 help:
