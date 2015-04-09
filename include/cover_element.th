@@ -35,7 +35,7 @@ bool cover_element<T>::none() const {
 
 template <typename T>
 bool cover_element<T>::all() const {
-    return value == ~0;
+    return value == ~0u;
 }
 
 template <typename T>

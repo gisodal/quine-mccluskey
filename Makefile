@@ -100,7 +100,7 @@ DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) install build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
+.PHONY: all $(PROJECT) install first build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -112,6 +112,10 @@ $(PROJECT): build
 build: $(BDIR)/$(PROJECT)
 
 rebuild: clean build
+
+# stop at first error of compilation
+first: CFLAGS += -Wfatal-errors
+first: build
 
 # compile with debug symbols
 debug: CFLAGS = $(CDFLAGS)
