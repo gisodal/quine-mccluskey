@@ -131,7 +131,7 @@ profile: O = -O0 -pg
 profile: build
 
 # install to PREFIX
-install: build
+install: library build
 	mkdir -p $(PREFIX)/bin
 	mkdir -p $(PREFIX)/lib$(ARCH)
 	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin

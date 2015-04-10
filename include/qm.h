@@ -70,7 +70,7 @@ class qm {
         template <typename T> inline unsigned int get_weight(cube<T>&, const T&) const;
         template <typename P> void print_cubes(cube<P>*, unsigned int *, unsigned int);
         template <typename P> void cpy_primes(cube<P>*, unsigned int);
-        void get_clause(std::vector<M>&, std::vector<uint8_t>&, unsigned int);
+        void get_clause(std::vector<uint32_t>&, std::vector<uint8_t>&, unsigned int);
         unsigned int get_primes_size();
 
         int unate_cover();

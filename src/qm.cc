@@ -241,7 +241,7 @@ unsigned int qm<M>::get_primes_size(){
 }
 
 template <typename M>
-void qm<M>::get_clause(vector<M> &literals, vector<uint8_t> &negated, unsigned int e){
+void qm<M>::get_clause(vector<uint32_t> &literals, vector<uint8_t> &negated, unsigned int e){
     cover_element<M> p0 = primes[e][0];
     cover_element<M> p1 = primes[e][1];
 
