@@ -18,6 +18,9 @@ struct cube {
     inline T& operator[](const int i) {
         return s[i];
     };
+    static cube<T>* cast(void *v){
+        return (cube<T>*) v;
+    };
 };
 
 #endif
