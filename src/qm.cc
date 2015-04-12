@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <limits.h>
 #include "bit.h"
-
+#include <map>
 #include "cover.h"
 
 using namespace std;
@@ -125,7 +125,8 @@ int qm<M>::solve(){
         return 1;
     else if(models.size() == 1){
         primes.resize(1);
-        primes[0][models[0]];
+        primes[0][0] = models[0];
+        primes[0][1] = 0;
         return 2;
     } else if(canonical_primes())
         return 2;
@@ -250,8 +251,11 @@ void qm<M>::get_clause(vector<uint32_t> &literals, vector<uint8_t> &negated, uns
             literals.resize(primes.size()+1);
             literals[literals.size()-1] = variables[i];
 
+            negated.resize(literals.size()+1);
             if(!p0.test(i) && !p1.test(i))
-                negated[i] = true;
+                negated[negated.size()-1] = true;
+            else
+                negated[negated.size()-1] = false;
         }
     }
 }
@@ -311,7 +315,7 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
     for(unsigned int i = 0; i < ccubes_size; i++){
         M c = models[i];
         T group = bitcount(c);
-        model_to_group[c] = group;
+        model_to_group[i] = group;
         size[group]++;
     }
 
@@ -323,7 +327,7 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
 
     for(unsigned int i = 0; i < ccubes_size; i++){
         T c = models[i];
-        uint32_t index = offset[model_to_group[c]] + size[model_to_group[c]]++;
+        uint32_t index = offset[model_to_group[i]] + size[model_to_group[i]]++;
         ccubes[index] = {{c,0}};
     }
 
@@ -596,6 +600,19 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
         primes[i] = primes[essentials[i]];
 
     return essential_size+non_essential_size;
+}
+
+template <class M>
+bool qm<M>::reduced(){
+    if(primes.size() < models.size())
+        return true;
+    else {
+        for(unsigned int i = 0; i < primes.size(); i++)
+            if(primes[i][1] > 0)
+                return true;
+    }
+
+    return false;
 }
 
 template <class M>

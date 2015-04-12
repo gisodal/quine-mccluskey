@@ -64,6 +64,7 @@ class qm {
         int canonical_primes();
         size_t required_size();
         void print();
+
         template <typename T> int compute_primes(cube<T>*);
         template <typename T> int quine_mccluskey(cube<T>*);
         template <typename P, typename T> int reduce(cube<P>*, unsigned int);
@@ -73,9 +74,10 @@ class qm {
         void get_clause(std::vector<uint32_t>&, std::vector<uint8_t>&, unsigned int);
         unsigned int get_primes_size();
 
+        bool reduced();
         int unate_cover();
         bool valid();
-    private:
+    //private:
         size_t cube_size;
         std::vector<unsigned int> variables;         // variables with least significant bit first (variables[0])
         std::vector<M> models;

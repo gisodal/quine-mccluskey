@@ -9,7 +9,13 @@
 using namespace std;
 
 int main (int argc, char **argv){
-    qm<uint32_t> q;
+    #if __LP64__
+    const int MAX_QM = 128;
+    qm<uint128_t> q;
+    #else
+    qm<uint64_t> q;
+    const int MAX_QM = 64;
+    #endif
 
     opterr = 0;
     int i,c,index;
@@ -17,6 +23,11 @@ int main (int argc, char **argv){
     while ((c = getopt (argc, argv, "v:o:")) != -1){
         switch (c){
             case 'v':
+                if(atoi(optarg) > MAX_QM){
+                    fprintf(stderr, "Cannot handle more than %d variables\n", MAX_QM);
+                    exit(1);
+                }
+
                 for(i = 0; i < atoi(optarg); i++)
                     q.add_variable(i);
                 break;
@@ -42,12 +53,15 @@ int main (int argc, char **argv){
         }
     }
     for (index = optind; index < argc; index++)
-        printf ("Non-option argument %s\n", argv[index]);
+        fprintf(stderr, "Ingoring argument '%s'\n", argv[index]);
 
-    if(q.valid())
+    if(q.valid()){
         q.solve();
-    else
-        fprintf(stderr, "Input not valid, provide variables (-v #VARIABLES) and models (-o #models)\n");
+        if(q.reduced())
+            printf("reduced!\n");
+        q.print();
+    } else
+        fprintf(stderr, "Input not valid, provide variables (-v #VARIABLES) and models (-o model1,model2,...)\n");
 
     return 0;
 }

@@ -36,7 +36,7 @@ CC       = g++
 EXT      = cc
 CXXFLAGS = -std=c++11
 CFLAGS   = -w
-CDFLAGS  = -ggdb -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers
+CDFLAGS  = -gdwarf-3 -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers
 O        = -O3
 
 # ------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) install first build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
+.PHONY: all $(PROJECT) all debug-all install first build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -131,7 +131,11 @@ profile: O = -O0 -pg
 profile: build
 
 # install to PREFIX
-install: library build
+debug-all: debug-library debug
+
+all: library build
+
+install:
 	mkdir -p $(PREFIX)/bin
 	mkdir -p $(PREFIX)/lib$(ARCH)
 	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin
