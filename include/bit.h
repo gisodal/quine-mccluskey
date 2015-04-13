@@ -6,17 +6,17 @@
 
 template <typename T>
 inline void set_bit(T &x, unsigned i){
-    x |= (1<<i);
+    x |= ((T)1<<i);
 }
 
 template <typename T>
 inline void clear_bit(T &x, unsigned i){
-    x &= ~(1<<i);
+    x &= ~((T)1<<i);
 }
 
 template <typename T>
 inline void toggle_bit(T &x, unsigned int i){
-    x ^= (1 << i);
+    x ^= ((T)1 << i);
 }
 
 template <typename T>
@@ -63,7 +63,7 @@ inline unsigned int bitcount(uint64_t x){
 
 template <typename T>
 inline bool is_power_of_two_or_zero(const T x){
-    return (x & (x - 1)) == 0;
+    return (x & (x - 1)) == (T) 0;
 }
 
 #endif
