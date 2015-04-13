@@ -25,17 +25,22 @@ unsigned int cover_element<T>::count() const{
 
 template <typename T>
 bool cover_element<T>::test(unsigned int i) const {
-    return (value >> i) & 1;
+    return (value >> i) & (T)1;
 }
 
 template <typename T>
 bool cover_element<T>::none() const {
-    return value == 0;
+    return value == (T)0;
 }
 
 template <typename T>
 bool cover_element<T>::all() const {
-    return value == ~0u;
+    return value == ~(T)0;
+}
+
+template <typename T>
+void cover_element<T>::clear_all(){
+    value = 0;
 }
 
 template <typename T>
@@ -45,22 +50,22 @@ void cover_element<T>::set_all(){
 
 template <typename T>
 void cover_element<T>::set_lsb(unsigned int i){
-    value = (i < 32?(1 << i)-1:~0);
+    value = (i < 32?(((T)1) << i)-1:~(T)0u);
 }
 
 template <typename T>
 void cover_element<T>::set(unsigned int i){
-    value |= (1<<i);
+    value |= (((T)1) <<i);
 }
 
 template <typename T>
 void cover_element<T>::clear(unsigned int i){
-    value &= ~(1 << i);
+    value &= ~(((T)1) << i);
 }
 
 template <typename T>
 bool cover_element<T>::power_of_two_or_zero() const {
-    return (value & (value - 1)) == 0;
+    return (value & (value - 1)) == (T)0;
 }
 
 template <typename T>

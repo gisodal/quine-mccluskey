@@ -2,7 +2,12 @@
 
 template <typename T>
 void cover_list<T>::init(const unsigned int value){
-    memset(covers, (T) value, sizeof(T)*SIZE*COVER_SIZE);
+    if(value == 1)
+        memset(covers, ~(T)0, sizeof(T)*SIZE*COVER_SIZE);
+    else if(value == 0)
+        memset(covers, (T)0, sizeof(T)*SIZE*COVER_SIZE);
+    else
+        memset(covers, (T) value, sizeof(T)*SIZE*COVER_SIZE);
 }
 
 template <typename T>

@@ -55,13 +55,10 @@ int main (int argc, char **argv){
     for (index = optind; index < argc; index++)
         fprintf(stderr, "Ingoring argument '%s'\n", argv[index]);
 
-    if(q.valid()){
-        q.solve();
-        if(q.reduced())
-            printf("reduced!\n");
-        q.print();
-    } else
-        fprintf(stderr, "Input not valid, provide variables (-v #VARIABLES) and models (-o model1,model2,...)\n");
+    q.solve();
+    if(q.reduced())
+        printf("reduced!\n");
+    q.print();
 
     return 0;
 }

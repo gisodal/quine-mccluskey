@@ -14,6 +14,7 @@ class cover_element {
         bool test(unsigned int) const;
         bool none() const;
         bool all() const;
+        void clear_all();
         void set_all();
         void set_lsb(unsigned int);
         void set(unsigned int);

@@ -76,7 +76,6 @@ class qm {
 
         bool reduced();
         int unate_cover();
-        bool valid();
     //private:
         size_t cube_size;
         std::vector<unsigned int> variables;         // variables with least significant bit first (variables[0])

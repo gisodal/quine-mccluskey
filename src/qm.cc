@@ -121,8 +121,8 @@ int qm<M>::solve(){
     primes.resize(0);
     if(models.size() == 0)
         return 0;
-    else if(models.size() == pow2(variables.size()))
-        return 1;
+    //else if(models.size() == pow2(variables.size()))
+        //return 1;
     else if(models.size() == 1){
         primes.resize(1);
         primes[0][0] = models[0];
@@ -132,19 +132,6 @@ int qm<M>::solve(){
         return 2;
 
     return -1;
-}
-
-template <typename M>
-bool qm<M>::valid(){
-    uint32_t vars = variables.size();
-    if(vars > 0){
-        uint32_t max = pow2(vars);
-        for(unsigned int i = 0; i < models.size(); i++)
-            if(models[i] >= max)
-                return false;
-        return true;
-    }
-    return false;
 }
 
 template <typename M>
@@ -210,8 +197,8 @@ int qm<M>::canonical_primes(){
     #if __LP64__
     else if(VARIABLES <= 128){
         cube_size = 128;
-        cube<uint128_t> *vprimes;
-        PRIMES = compute_primes<uint128_t>(vprimes);
+        vprimes = alloca(sizeof(cube<uint128_t>)*models.size());
+        PRIMES = compute_primes<uint128_t>(cube<uint128_t>::cast(vprimes));
         cpy_primes(cube<uint128_t>::cast(vprimes), PRIMES);
     }
     #endif
@@ -431,10 +418,11 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
 
     uint16_t *prime_weight = (uint16_t*) alloca(sizeof(uint16_t*)*PRIMES);                   // int prime_weight[PRIMES]
     unsigned int N = cover<T,0>::cover_size(MODELS);
-    cover_list<T> &prime_cover = cover_list<T>::cast((alloca(sizeof(T)*N*MODELS)));  // cover prime_cover[PRIMES]
+    cover_list<T> *prime_cover_ptr = (cover_list<T>*) malloc(sizeof(unsigned int)*2+sizeof(T)*N*PRIMES);
+    cover_list<T> &prime_cover = *prime_cover_ptr;//cover_list<T>::cast((malloc(sizeof(T)*N*MODELS)));  // cover prime_cover[PRIMES]
     prime_cover.set_size(PRIMES);
     prime_cover.set_cover_size(N);
-    prime_cover.init(~0u);
+    prime_cover.init(1);
 
     uint16_t *chart_size = (uint16_t*) alloca(sizeof(uint16_t)*MODELS);   // int chart_size[MODELS]
     uint32_t *chart_offset = (uint32_t*) alloca(sizeof(uint32_t)*MODELS); // int chart_offset[MODELS]
@@ -599,6 +587,7 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
     for(unsigned int i = 0; i < essential_size+non_essential_size; i++)
         primes[i] = primes[essentials[i]];
 
+    free(prime_cover_ptr);
     return essential_size+non_essential_size;
 }
 

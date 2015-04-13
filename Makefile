@@ -36,7 +36,6 @@ CC       = g++
 EXT      = cc
 CXXFLAGS = -std=c++11
 CFLAGS   = -w
-CDFLAGS  = -gdwarf-3 -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers
 O        = -O3
 
 # ------------------------------------------------------------------------------
@@ -56,6 +55,14 @@ TDIR = tar
 UDIR = usr
 DIR  = $(shell cd "$( dirname "$0" )" && pwd)
 ARCH = $(shell getconf LONG_BIT)
+
+ifeq ($(ARCH),32)
+	DFLAG = -gdwarf-3
+else
+	DFLAG = -ggdb
+endif
+
+CDFLAGS  = $(DFLAG) -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers
 
 # containting directory is default project name
 ifeq ($(PROJECT),)
@@ -142,25 +149,33 @@ install:
 	cp $(LDIR)/* $(PREFIX)/lib$(ARCH)
 
 # create libraries
-debug-library:
-	$(MAKE) library CFLAGS='$(CDFLAGS)' O='-O0'
+debug-library: DLIB = debug-
+debug-library: library
 
 library:
 	@echo '==== Creating static library ===='
 	$(RM) -r $(ODIR)
-	$(MAKE) static
+	$(MAKE) $(DLIB)static
 	@echo '==== Creating dynamic library ===='
 	$(RM) -r $(ODIR)
-	$(MAKE) dynamic
+	$(MAKE) $(DLIB)dynamic
 	$(RM) -r $(ODIR)
 
 # create static library
+debug-static: CFLAGS = $(CDFLAGS)
+debug-static: O = -O0
+debug-static: static
+
 static: $(LDIR)/$(STATICLIB)
 
 $(LDIR)/$(STATICLIB): $(ODIR) $(LIBOBJS) $(LDIR)
 	ar rcs $(LDIR)/$(STATICLIB) $(LIBOBJS)
 
 # create dynamic library
+debug-dynamic: CFLAGS = $(CDFLAGS)
+debug-dynamic: O = -O0
+debug-dynamic: dynamic
+
 dynamic: $(LDIR)/$(DYNAMICLIB)
 
 $(LDIR)/$(DYNAMICLIB): CFLAGS += -fPIC
