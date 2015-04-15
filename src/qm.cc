@@ -235,14 +235,12 @@ void qm<M>::get_clause(vector<uint32_t> &literals, vector<uint8_t> &negated, uns
 
     for(unsigned i = 0; i < variables.size(); i++){
         if(p0.test(i) || !p1.test(i)){
-            literals.resize(primes.size()+1);
-            literals[literals.size()-1] = variables[i];
+            literals.push_back(variables[i]);
 
-            negated.resize(literals.size()+1);
             if(!p0.test(i) && !p1.test(i))
-                negated[negated.size()-1] = true;
+                negated.push_back(true);
             else
-                negated[negated.size()-1] = false;
+                negated.push_back(false);
         }
     }
 }

@@ -4,6 +4,8 @@
 #include <vector>
 #include <stdint.h>
 #include <stddef.h>
+#include <stdio.h>
+#include <algorithm>
 
 #if __LP64__
 
@@ -48,6 +50,7 @@ typedef __uint128_t uint128_t;
 #endif
 
 #include "cube.h"
+#include "cover_element.h"
 #include <vector>
 
 template <typename M>
@@ -56,8 +59,8 @@ class qm {
         qm();
         ~qm();
 
-        inline void add_variable(uint32_t);
-        inline void add_model(M);
+        inline void add_variable(uint32_t, int index = -1);
+        inline void add_model(M,M dc = 0);
         void clear();
         int solve();
 
@@ -79,18 +82,57 @@ class qm {
     //private:
         size_t cube_size;
         std::vector<unsigned int> variables;         // variables with least significant bit first (variables[0])
-        std::vector<M> models;
+        std::vector< M > models;
         std::vector< cube<M> > primes;
 };
 
 template <typename M>
-inline void qm<M>::add_variable(uint32_t v){
-    variables.push_back(v);
+inline void qm<M>::add_variable(uint32_t v, int index){
+    if(index < 0)
+        variables.push_back(v);
+    else {
+        if(variables.size() <= index)
+            variables.resize(index+1);
+        variables[index] = v;
+    }
 }
 
 template <typename M>
-inline void qm<M>::add_model(M m){
-    models.push_back(m);
+inline void qm<M>::add_model(M im, M idc){
+    if(idc){
+        cover_element<M> m = im;
+        cover_element<M> dc = idc;
+
+        uint8_t ctr[sizeof(M)*8 + 1] = {0};
+        for(unsigned int i = 0; i < variables.size(); i++)
+            ctr[i] = m.test(i);
+
+        while(true){
+            cover_element<M> model;
+            model.clear_all();
+            for(unsigned int i = 0; i < variables.size(); i++)
+                if(ctr[i])
+                    model.set(i);
+            add_model(model.value);
+
+            bool changed = false;
+            for(int q = variables.size()-1; q >= 0; q--){
+                if(ctr[q] < 1 && dc.test(q)){
+                    ctr[q]++;
+                    changed = true;
+                    for(int r = q+1; r < variables.size(); r++)
+                        ctr[r] = m.test(r);
+                    break;
+                }
+            }
+            if(!changed)
+                break;
+        }
+
+    } else {
+        if(std::find(models.begin(), models.end(), im) == models.end())
+            models.push_back(im);
+    }
 }
 
 #endif
