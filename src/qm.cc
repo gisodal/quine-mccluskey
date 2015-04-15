@@ -320,19 +320,22 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
     unsigned int groups = GROUPS-1;
     T *csize = size, *nsize = size + GROUPS;
     T *coffset = offset, *noffset = offset + GROUPS;
+
+    unsigned int SIZE = check.size();
+    if(SIZE <= csize[GROUPS-1] + coffset[GROUPS-1]){
+        unsigned int s = csize[GROUPS-1] + coffset[GROUPS-1];
+        ncubes.resize(s);
+        ccubes.resize(s);
+        check.resize(s);
+        fill(check.begin()+SIZE, check.end(),0);
+        SIZE = s;
+    }
+
     while(groups){
         unsigned int ncubes_size = 0;
         for(unsigned int group = 0; group < groups; group++){
             noffset[group] = ncubes_size;
             nsize[group] = 0;
-
-            unsigned int SIZE = check.size();
-            if(SIZE < (unsigned int) 2 * (csize[GROUPS-1] + coffset[GROUPS-1])){
-                ncubes.resize(2*SIZE);
-                ccubes.resize(2*SIZE);
-                check.resize(2*SIZE);
-                fill(check.begin()+SIZE, check.end(),0);
-            }
 
             for(unsigned int i = 0; i < csize[group]; i++){
                 unsigned int oi = coffset[group]+i;
@@ -343,7 +346,14 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
                     uint16_t p = ci[0] ^ cj[0];
                     if(ci[1] == cj[1] && is_power_of_two_or_zero(p)){
                         // merge
-
+                        SIZE = check.size(); // if(SIZE < (unsigned int) 2 * (csize[GROUPS-1] + coffset[GROUPS-1])){
+                        if(ncubes_size >= SIZE){
+                            ncubes.resize(2*SIZE);
+                            ccubes.resize(2*SIZE);
+                            check.resize(2*SIZE);
+                            fill(check.begin()+SIZE, check.end(),0);
+                        }
+                        SIZE = check.size();
                         cube<T> &co = ncubes[ncubes_size];
                         co[0] = ci[0] & cj[0];
                         co[1] = ci[1] | p;
