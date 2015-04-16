@@ -28,16 +28,15 @@ int main (int argc, char **argv){
                     exit(1);
                 }
 
-                for(i = 0; i < 6; i++)
+                for(i = 0; i < atoi(optarg); i++)
                     q.add_variable(i);
                 break;
             case 'o':
-                q.add_model(16,13);
-                //opt = strtok (optarg,",");
-                //while(opt != NULL){
-                //    q.add_model(atoi(opt));
-                //    opt = strtok (NULL, ",");
-                //}
+                opt = strtok (optarg,",");
+                while(opt != NULL){
+                    q.add_model(atoi(opt));
+                    opt = strtok (NULL, ",");
+                }
                 break;
             case '?':
                 if (optopt == 'o')

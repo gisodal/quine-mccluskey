@@ -124,16 +124,21 @@ class QM:
       primes |= set(c for cubes in sigma for c in cubes) - redundant
       groups = groups - 1
 
-      debug = False;
+      debug = True;
       if debug:
-        #print "groups: "+str(groups+1)
+        print "groups: "+str(groups+1)
         #print "sigma: "+str(sigma)
-        for i,c in zip(xrange(-1,len(sigma)+1),sorted(sigma)):
-            print "  "+str(i)+" ("+str(len(c))+") : "+str(c)
-        print "  redundant: "+str(redundant)
+        for i,c in zip(xrange(-1,len(sigma)+2),sorted(sigma)):
+            print " * "+str(i)+" ("+str(len(c))+") : " #+str(sorted(c))
+            for m,dc in sorted(c):
+                stdout.write("("+"{0:b}".format(m)+","+"{0:b}".format(dc)+") ")
+            print
+
+        #print "  redundant: "+str(sorted(redundant))
         print "  primes   : "+str(set(c for cubes in sigma for c in cubes) - redundant)+"\n"
       sigma = nsigma
 
+    print "primes: "+str(primes)+"\n"
     if debug:
       print "primes: "+str(primes)+"\n"
     return primes

@@ -118,6 +118,13 @@ void qm<M>::clear(){
 
 template <typename M>
 int qm<M>::solve(){
+    //printf("     -v%d -o", variables.size());
+    //for(unsigned int i = 0; i < models.size() && i < 150; i++){
+    //    if(i > 0)
+    //        printf(",");
+    //    printf("%d", models[i]);
+    //}
+    //printf("\n");
     primes.resize(0);
     if(models.size() == 0)
         return 0;
@@ -284,10 +291,10 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
 
     //cube<T> *primes = (cube<T>*) data;
 
-    T *size = (T*) alloca(sizeof(T)*2*GROUPS);
+    T *size = (T*) malloc(sizeof(T)*2*GROUPS);
     memset(size, 0, sizeof(T)*2*GROUPS);
 
-    T *offset = (T*) alloca(sizeof(T)*2*GROUPS);
+    T *offset = (T*) malloc(sizeof(T)*2*GROUPS);
     memset(offset, 0, sizeof(T)*2*GROUPS);
 
     vector<uint8_t> check(2*models.size(),0);
@@ -295,7 +302,7 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
     vector< cube<T> > ccubes(2*models.size());
 
     // prepare cubes
-    T *model_to_group = (T*) alloca(sizeof(T)*models.size());
+    T *model_to_group = (T*) malloc(sizeof(T)*models.size());
     unsigned int ccubes_size = models.size();
     for(unsigned int i = 0; i < ccubes_size; i++){
         M c = models[i];
@@ -332,6 +339,7 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
     }
 
     while(groups){
+        printf("==== group %d ====\n", groups);
         unsigned int ncubes_size = 0;
         for(unsigned int group = 0; group < groups; group++){
             noffset[group] = ncubes_size;
@@ -342,27 +350,26 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
                 for(unsigned int j = 0; j < csize[group+1]; j++){
                     unsigned int oj = coffset[group+1]+j;
 
-                    cube<T> &ci = ccubes[oi], &cj = ccubes[oj];
-                    uint16_t p = ci[0] ^ cj[0];
-                    if(ci[1] == cj[1] && is_power_of_two_or_zero(p)){
+                    T p = ccubes[oi][0] ^ ccubes[oj][0];
+                    if(ccubes[oi][1] == ccubes[oj][1] && is_power_of_two_or_zero(p)){
                         // merge
-                        SIZE = check.size(); // if(SIZE < (unsigned int) 2 * (csize[GROUPS-1] + coffset[GROUPS-1])){
+                        //SIZE = check.size(); // if(SIZE < (unsigned int) 2 * (csize[GROUPS-1] + coffset[GROUPS-1])){
                         if(ncubes_size >= SIZE){
                             ncubes.resize(2*SIZE);
                             ccubes.resize(2*SIZE);
                             check.resize(2*SIZE);
                             fill(check.begin()+SIZE, check.end(),0);
+                            SIZE = check.size();
                         }
-                        SIZE = check.size();
                         cube<T> &co = ncubes[ncubes_size];
-                        co[0] = ci[0] & cj[0];
-                        co[1] = ci[1] | p;
+                        co[0] = ccubes[oi][0] & ccubes[oj][0];
+                        co[1] = ccubes[oi][1] | p;
                         check[oi] = 1;
                         check[oj] = 1;
 
                         // check for duplicates
                         bool insert = true;
-                        for(int c = ncubes_size-1; c >= 0; c--){
+                        for(unsigned int c = noffset[group]; c < ncubes_size; c++){
                             if(co == ncubes[c]){
                                 insert = false;
                                 break;
@@ -376,6 +383,11 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
                     }
                 }
             }
+            //sort(ncubes.begin() + noffset[group], ncubes.end());
+            printf("%d:%d: ", group, nsize[group]);
+            for(unsigned int i = 0; i < nsize[group]; i++)
+                printf("(%u,%u) ", ncubes[noffset[group]+i][0], ncubes[noffset[group]+i][1]);
+            printf("\n");
         }
 
         // get primes
@@ -402,10 +414,16 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
         groups--;
     }
 
-    //for(unsigned int i = 0; i < PRIMES; i++){
-    //    printf(" (%d, %d)", primes[i][0], primes[i][1]);
-    //}
-    //printf("\n");
+    for(unsigned int i = 0; i < PRIMES; i++){
+        printf(" (%d, %d)", primes[i][0], primes[i][1]);
+    }
+    printf("\n");
+
+    free(size);
+    free(offset);
+    free(model_to_group);
+
+
     return PRIMES;
 }
 
@@ -434,9 +452,9 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
 
     uint16_t *chart_size = (uint16_t*) alloca(sizeof(uint16_t)*MODELS);   // int chart_size[MODELS]
     uint32_t *chart_offset = (uint32_t*) alloca(sizeof(uint32_t)*MODELS); // int chart_offset[MODELS]
-    T *chart = (T*) alloca(sizeof(T)*MODELS);                             // int chart[MODELS]
+    vector<T> chart;// = (T*) alloca(sizeof(T)*MODELS*PRIMES);                      // int chart[MODELS*PRIMES]
 
-    //sort(primes,primes+PRIMES);
+    sort(primes,primes+PRIMES);
 
     // determine weight of primes
     const P MASK = ((P)1 << variables.size()) -1;
@@ -444,14 +462,13 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
         prime_weight[p] = get_weight<P>(primes[p], MASK);
 
     // make prime chart
-    unsigned int CHART_SIZE = 0;
     for(unsigned int i = 0; i < MODELS; i++){
-        chart_offset[i] = CHART_SIZE;
+        chart_offset[i] = chart.size();
         chart_size[i] = 0;
         for(unsigned int p = 0; p < PRIMES; p++){
             if((models[i] & (~primes[p][1])) == primes[p][0]){
                 prime_cover[p].clear(i);
-                chart[CHART_SIZE++] = p;
+                chart.push_back(p);
                 chart_size[i]++;
             }
         }
@@ -485,6 +502,42 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
             }
         }
     }
+
+    //for(unsigned int i = 0; i < MODELS; i++)
+    //    if(cvr.test(i))
+    //        printf("-");
+    //    else printf("1");
+    //printf("\n");
+
+    //for(unsigned int p = 0; p < PRIMES; p++){
+    //    printf("%2d: ",p);
+    //    for(unsigned int i = 0; i < MODELS; i++){
+    //        if(prime_cover[p].test(i))
+    //            printf("-");
+    //        else printf("1");
+    //    }
+    //    printf("\n");
+    //}
+    //printf("    ");
+    //for(unsigned int i = 0; i < MODELS; i++)
+    //    if(i%10 == 0)
+    //        printf("|");
+    //    else
+    //        printf("%d", i%10);
+    //printf("\n\n");
+
+
+    //for(unsigned int n = 0; n < PRIMES; n++){
+    //    printf("    ");
+    //    for(unsigned int i = 0; i < MODELS; i++)
+    //        if(n < chart_size[i])
+    //            printf("%d", chart[chart_offset[i]+n]);
+    //        else printf(" ");
+    //    printf("\n");
+    //}
+    //for(unsigned int i = 0; i < MODELS; i++)
+    //    if(cvr.test(i) && chart_size[i] == 1)
+    //        printf("model %d should have been removed\n", i);
 
     // find minimal prime implicate representation
     unsigned int non_essential_size = 0;

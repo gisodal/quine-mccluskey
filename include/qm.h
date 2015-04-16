@@ -88,10 +88,10 @@ class qm {
 
 template <typename M>
 inline void qm<M>::add_variable(uint32_t v, int index){
-    if(index < 0)
+    if(index == -1)
         variables.push_back(v);
     else {
-        if(variables.size() <= index)
+        if(variables.size() <= (unsigned int) index)
             variables.resize(index+1);
         variables[index] = v;
     }
@@ -116,11 +116,11 @@ inline void qm<M>::add_model(M im, M idc){
             add_model(model.value);
 
             bool changed = false;
-            for(int q = variables.size()-1; q >= 0; q--){
+            for(unsigned int q = variables.size()-1; q >= 0; q--){
                 if(ctr[q] < 1 && dc.test(q)){
                     ctr[q]++;
                     changed = true;
-                    for(int r = q+1; r < variables.size(); r++)
+                    for(unsigned int r = q+1; r < variables.size(); r++)
                         ctr[r] = m.test(r);
                     break;
                 }
