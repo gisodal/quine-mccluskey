@@ -112,6 +112,7 @@ class QM:
     while sigma:
       nsigma = []
       redundant = set()
+      group = 0;
       for c1, c2 in zip(sigma[:-1], sigma[1:]):
         nc = set()
         for a in c1:
@@ -121,24 +122,25 @@ class QM:
               nc.add(m)
               redundant |= set([a, b])
         nsigma.append(nc)
+        group = group + 1
       primes |= set(c for cubes in sigma for c in cubes) - redundant
       groups = groups - 1
 
-      debug = True;
+      debug = False;
       if debug:
         print "groups: "+str(groups+1)
         #print "sigma: "+str(sigma)
-        for i,c in zip(xrange(-1,len(sigma)+2),sorted(sigma)):
+        for i,c in zip(range(0,len(sigma)),sorted(sigma)):
             print " * "+str(i)+" ("+str(len(c))+") : " #+str(sorted(c))
             for m,dc in sorted(c):
-                stdout.write("("+"{0:b}".format(m)+","+"{0:b}".format(dc)+") ")
+                #stdout.write("("+"{0:b}".format(m)+","+"{0:b}".format(dc)+") ")
+                stdout.write("("+str(m)+","+str(dc)+") ")
             print
 
         #print "  redundant: "+str(sorted(redundant))
         print "  primes   : "+str(set(c for cubes in sigma for c in cubes) - redundant)+"\n"
       sigma = nsigma
 
-    print "primes: "+str(primes)+"\n"
     if debug:
       print "primes: "+str(primes)+"\n"
     return primes
@@ -364,10 +366,10 @@ def main():
         stdout.write('tautology\n')
     else:
         for cover in soln[1]:
-            stdout.write(str(soln[0])+":")
-            for prime in sorted(list(cover)):
-                stdout.write(" "+str(qm.calculate_complexity_term(prime))+":"+str(prime))
-            stdout.write("\n")
+            #stdout.write(str(soln[0])+":")
+            #for prime in sorted(list(cover)):
+            #    stdout.write(" "+str(qm.calculate_complexity_term(prime))+":"+str(prime))
+            #stdout.write("\n")
 
             f = qm.get_function(cover)
             stdout.write(f+"\n")

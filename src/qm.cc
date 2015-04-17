@@ -291,11 +291,11 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
 
     //cube<T> *primes = (cube<T>*) data;
 
-    T *size = (T*) malloc(sizeof(T)*2*GROUPS);
-    memset(size, 0, sizeof(T)*2*GROUPS);
+    unsigned int *size = (unsigned int*) alloca(sizeof(unsigned int)*2*GROUPS);
+    memset(size, 0, sizeof(unsigned int)*2*GROUPS);
 
-    T *offset = (T*) malloc(sizeof(T)*2*GROUPS);
-    memset(offset, 0, sizeof(T)*2*GROUPS);
+    unsigned int *offset = (unsigned int*) alloca(sizeof(unsigned int)*2*GROUPS);
+    memset(offset, 0, sizeof(unsigned int)*2*GROUPS);
 
     vector<uint8_t> check(2*models.size(),0);
     vector< cube<T> > ncubes(2*models.size());
@@ -322,11 +322,12 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
         uint32_t index = offset[model_to_group[i]] + size[model_to_group[i]]++;
         ccubes[index] = {{c,0}};
     }
+    free(model_to_group);
 
     // quine-mccluskey
     unsigned int groups = GROUPS-1;
-    T *csize = size, *nsize = size + GROUPS;
-    T *coffset = offset, *noffset = offset + GROUPS;
+    unsigned int *csize = size, *nsize = size + GROUPS;
+    unsigned int *coffset = offset, *noffset = offset + GROUPS;
 
     unsigned int SIZE = check.size();
     if(SIZE <= csize[GROUPS-1] + coffset[GROUPS-1]){
@@ -339,7 +340,6 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
     }
 
     while(groups){
-        printf("==== group %d ====\n", groups);
         unsigned int ncubes_size = 0;
         for(unsigned int group = 0; group < groups; group++){
             noffset[group] = ncubes_size;
@@ -383,11 +383,6 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
                     }
                 }
             }
-            //sort(ncubes.begin() + noffset[group], ncubes.end());
-            printf("%d:%d: ", group, nsize[group]);
-            for(unsigned int i = 0; i < nsize[group]; i++)
-                printf("(%u,%u) ", ncubes[noffset[group]+i][0], ncubes[noffset[group]+i][1]);
-            printf("\n");
         }
 
         // get primes
@@ -413,16 +408,6 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
         swap(ccubes, ncubes);
         groups--;
     }
-
-    for(unsigned int i = 0; i < PRIMES; i++){
-        printf(" (%d, %d)", primes[i][0], primes[i][1]);
-    }
-    printf("\n");
-
-    free(size);
-    free(offset);
-    free(model_to_group);
-
 
     return PRIMES;
 }
@@ -503,42 +488,6 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
         }
     }
 
-    //for(unsigned int i = 0; i < MODELS; i++)
-    //    if(cvr.test(i))
-    //        printf("-");
-    //    else printf("1");
-    //printf("\n");
-
-    //for(unsigned int p = 0; p < PRIMES; p++){
-    //    printf("%2d: ",p);
-    //    for(unsigned int i = 0; i < MODELS; i++){
-    //        if(prime_cover[p].test(i))
-    //            printf("-");
-    //        else printf("1");
-    //    }
-    //    printf("\n");
-    //}
-    //printf("    ");
-    //for(unsigned int i = 0; i < MODELS; i++)
-    //    if(i%10 == 0)
-    //        printf("|");
-    //    else
-    //        printf("%d", i%10);
-    //printf("\n\n");
-
-
-    //for(unsigned int n = 0; n < PRIMES; n++){
-    //    printf("    ");
-    //    for(unsigned int i = 0; i < MODELS; i++)
-    //        if(n < chart_size[i])
-    //            printf("%d", chart[chart_offset[i]+n]);
-    //        else printf(" ");
-    //    printf("\n");
-    //}
-    //for(unsigned int i = 0; i < MODELS; i++)
-    //    if(cvr.test(i) && chart_size[i] == 1)
-    //        printf("model %d should have been removed\n", i);
-
     // find minimal prime implicate representation
     unsigned int non_essential_size = 0;
     unsigned int min_weight = ~0u;
@@ -604,13 +553,6 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
                                     min_weight = tmp_weight;
                                 }
 
-                                //for(int d = 0; d <= depth; d++){
-                                //    unsigned int p = chart[chart_offset[stack[d][1]]+stack[d][0]];
-                                //    if(i == essential_size)
-                                //        printf("|");
-                                //    printf(" %d:%d:(%d, %d)", p, get_weight(primes[p],MASK), primes[p][0], primes[p][1]);
-                                //} printf("\n");
-
                                 stack[depth][0]++;
                             } else { // acquire more primes
                                 stack[depth][1] = i;
@@ -643,10 +585,6 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
     //}
     //printf("\n");
     //print_cubes<P>(primes, essentials,essential_size+non_essential_size);
-
-    sort(essentials, essentials+essential_size+non_essential_size);
-    for(unsigned int i = 0; i < essential_size+non_essential_size; i++)
-        primes[i] = primes[essentials[i]];
 
     free(prime_cover_ptr);
     return essential_size+non_essential_size;
