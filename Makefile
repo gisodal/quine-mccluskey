@@ -54,7 +54,14 @@ IDIR = include
 TDIR = tar
 UDIR = usr
 DIR  = $(shell cd "$( dirname "$0" )" && pwd)
-ARCH = $(shell getconf LONG_BIT)
+
+ifeq ($(MARCH),-m32)
+	ARCH = 32
+else ifeq ($(MARCH),-m64)
+	ARCH = 64
+else
+	ARCH = $(shell getconf LONG_BIT)
+endif
 
 ifeq ($(ARCH),32)
 	DFLAG = -gdwarf-3
@@ -191,7 +198,7 @@ assembly: build
 
 # create object files and dependencies
 $(ODIR)/%.o: $(SDIR)/%.$(EXT)
-	$(CC) -o $@ -c $< $(O) $(CXXFLAGS) $(CFLAGS) $(INC) -MMD
+	$(CC) -o $@ -c $< $(O) $(MARCH) $(CXXFLAGS) $(CFLAGS) $(INC) -MMD
 
 # create (link) executable binary
 $(BDIR)/$(PROJECT): $(ODIR) $(OBJS) $(BDIR)
