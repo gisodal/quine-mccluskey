@@ -1,6 +1,9 @@
 #ifndef CUBE_H
 #define CUBE_H
 
+// template<typename T>
+// using cube = std::tuple< cover_element<T>, cover_element<T> >;
+
 template <typename T>
 struct cube {
     T s[2];
