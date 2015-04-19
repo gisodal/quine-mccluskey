@@ -36,16 +36,8 @@ int main (int argc, char **argv){
             case 'o':
                 opt = strtok (optarg,",");
                 while(opt != NULL){
-                    cube<T> c;
-                    c[0] = atoi(opt);
-                    c[1] = 0;
-                    q.add_model(c);
+                    q.add_model(atoi(opt));
                     opt = strtok (NULL, ",");
-                    printf("list:\n");
-                    for(auto it = q.models.begin(); it != q.models.end(); it++){
-                       printf("(%u,0) ", (*it));
-                    } printf("\n");
-
                 }
                 break;
             case '?':

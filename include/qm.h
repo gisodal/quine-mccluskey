@@ -62,6 +62,7 @@ class qm {
 
         inline void add_variable(uint32_t, int index = -1);
         inline void add_model(cube<M>);
+        inline void add_model(M);
         void clear();
         int solve();
 
@@ -77,6 +78,7 @@ class qm {
         template <typename P> void cpy_primes(cube<P>*, unsigned int);
         void get_clause(std::vector<uint32_t>&, std::vector<uint8_t>&, unsigned int);
         unsigned int get_primes_size();
+        void remove_prime(cube<M>&);
 
         bool reduced();
         int unate_cover();
@@ -99,6 +101,11 @@ inline void qm<M>::add_variable(uint32_t v, int index){
 }
 
 template <typename M>
+inline void qm<M>::add_model(M model){
+    models.insert(model);
+}
+
+template <typename M>
 inline void qm<M>::add_model(cube<M> model){
     if(model[1].any()){
         cover_element<M> m;
@@ -108,21 +115,14 @@ inline void qm<M>::add_model(cube<M> model){
             models.insert(m.value);
 
             bool changed = false;
-            for(unsigned int q = variables.size()-1; q >= 0; q--){
-                if(!m.test(q) && model[1].test(q)){
-                    m.set(q);
-
+            for(unsigned int i = 0; i < variables.size(); i++){
+                if(!m.test(i) && model[1].test(i)){
                     cover_element<M> t;
-                    t.set_lsb(q);
-                    m &= t;
+                    t.set_lsb(i);
                     t.negate();
-                    t &= model[0];
-                    m |= t;
-                    //for(unsigned int r = q+1; r < variables.size(); r++)
-                    //    if(model[0].test(r))
-                    //        m.set(r);
-                    //    else
-                    //        m.clear(r);
+                    t |= model[0];
+                    m &= t;
+                    m.set(i);
 
                     changed = true;
                     break;

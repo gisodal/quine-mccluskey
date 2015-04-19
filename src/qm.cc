@@ -236,6 +236,12 @@ unsigned int qm<M>::get_primes_size(){
 }
 
 template <typename M>
+void qm<M>::remove_prime(cube<M> &c){
+    primes.erase(std::remove(primes.begin(), primes.end(), c), primes.end());
+}
+
+
+template <typename M>
 void qm<M>::get_clause(vector<uint32_t> &literals, vector<uint8_t> &negated, unsigned int e){
     cover_element<M> p0 = primes[e][0];
     cover_element<M> p1 = primes[e][1];
