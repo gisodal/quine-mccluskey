@@ -132,7 +132,7 @@ int qm<M>::solve(){
         //return 1;
     else if(models.size() == 1){
         primes.resize(1);
-        primes[0][0] = models[0];
+        primes[0][0] = *(models.begin());
         primes[0][1] = 0;
         return 2;
     } else if(canonical_primes())
@@ -303,9 +303,8 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
 
     // prepare cubes
     T *model_to_group = (T*) malloc(sizeof(T)*models.size());
-    unsigned int ccubes_size = models.size();
-    for(unsigned int i = 0; i < ccubes_size; i++){
-        M c = models[i];
+    for(auto it = models.begin(), unsigned int i = 0; it != models.end(); it++, i++){
+        M c = *it;
         T group = bitcount(c);
         model_to_group[i] = group;
         size[group]++;
@@ -317,8 +316,8 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
         size[i-1] = 0;
     }   size[GROUPS-1] = 0;
 
-    for(unsigned int i = 0; i < ccubes_size; i++){
-        T c = models[i];
+    for(auto it = models.begin(), unsigned int i = 0; it != models.end(); it++, i++){
+        M c = *it;
         uint32_t index = offset[model_to_group[i]] + size[model_to_group[i]]++;
         ccubes[index] = {{c,0}};
     }
@@ -328,7 +327,7 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
     unsigned int groups = GROUPS-1;
     unsigned int *csize = size, *nsize = size + GROUPS;
     unsigned int *coffset = offset, *noffset = offset + GROUPS;
-
+    unsigned int ccubes_size = models.size();
     unsigned int SIZE = check.size();
     if(SIZE <= csize[GROUPS-1] + coffset[GROUPS-1]){
         unsigned int s = csize[GROUPS-1] + coffset[GROUPS-1];
@@ -447,11 +446,11 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
         prime_weight[p] = get_weight<P>(primes[p], MASK);
 
     // make prime chart
-    for(unsigned int i = 0; i < MODELS; i++){
+    for(auto it = models.begin(), unsigned int i = 0; it != models.end(); it++, i++){
         chart_offset[i] = chart.size();
         chart_size[i] = 0;
         for(unsigned int p = 0; p < PRIMES; p++){
-            if((models[i] & (~primes[p][1])) == primes[p][0]){
+            if(((*it) & (~primes[p][1])) == primes[p][0]){
                 prime_cover[p].clear(i);
                 chart.push_back(p);
                 chart_size[i]++;

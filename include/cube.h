@@ -1,12 +1,14 @@
 #ifndef CUBE_H
 #define CUBE_H
 
-// template<typename T>
-// using cube = std::tuple< cover_element<T>, cover_element<T> >;
+#include "cover_element.h"
+
+//template<typename T>
+//using cube = std::tuple< cover_element<T>, cover_element<T> >;
 
 template <typename T>
 struct cube {
-    T s[2];
+    cover_element<T> s[2];
     inline bool operator==(const cube &c) const {
         return s[0] == c.s[0] && s[1] == c.s[1];
     };

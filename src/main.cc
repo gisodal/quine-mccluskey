@@ -34,7 +34,11 @@ int main (int argc, char **argv){
             case 'o':
                 opt = strtok (optarg,",");
                 while(opt != NULL){
-                    q.add_model(atoi(opt));
+                    #if __LP64__
+                    q.add_model((cube<uint128_t>) {atoi(opt),0});
+                    #else
+                    q.add_model((cube<uint64_t>) {atoi(opt),0});
+                    #endif
                     opt = strtok (NULL, ",");
                 }
                 break;

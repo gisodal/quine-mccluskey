@@ -40,17 +40,17 @@ bool cover_element<T>::all() const {
 
 template <typename T>
 void cover_element<T>::clear_all(){
-    value = 0;
+    value = (T)0u;
 }
 
 template <typename T>
 void cover_element<T>::set_all(){
-    value = ~0;
+    value = ~(T)0;
 }
 
 template <typename T>
 void cover_element<T>::set_lsb(unsigned int i){
-    value = (i < 32?(((T)1) << i)-1:~(T)0u);
+    value = ((T)1 << i)-1;
 }
 
 template <typename T>
@@ -59,6 +59,11 @@ void cover_element<T>::set(unsigned int i){
 }
 
 template <typename T>
+void cover_element<T>::negate(){
+    value = ~value;
+}
+
+valueypename T>
 void cover_element<T>::clear(unsigned int i){
     value &= ~(((T)1) << i);
 }

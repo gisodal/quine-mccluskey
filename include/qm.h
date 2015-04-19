@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <algorithm>
+#include <unordered_set>
 
 #if __LP64__
 
@@ -60,7 +61,7 @@ class qm {
         ~qm();
 
         inline void add_variable(uint32_t, int index = -1);
-        inline void add_model(M,M dc = 0);
+        inline void add_model(cube<M>);
         void clear();
         int solve();
 
@@ -82,7 +83,7 @@ class qm {
     //private:
         size_t cube_size;
         std::vector<unsigned int> variables;         // variables with least significant bit first (variables[0])
-        std::vector< M > models;
+        std::unordered_set< M > models;
         std::vector< cube<M> > primes;
 };
 
@@ -98,30 +99,32 @@ inline void qm<M>::add_variable(uint32_t v, int index){
 }
 
 template <typename M>
-inline void qm<M>::add_model(M im, M idc){
-    if(idc){
-        cover_element<M> m = im;
-        cover_element<M> dc = idc;
-
-        uint8_t ctr[sizeof(M)*8 + 1] = {0};
-        for(unsigned int i = 0; i < variables.size(); i++)
-            ctr[i] = m.test(i);
+inline void qm<M>::add_model(cube<M> model){
+    if(model[1].any()){
+        cover_element<M> m;
+        m = model[0];
 
         while(true){
-            cover_element<M> model;
-            model.clear_all();
-            for(unsigned int i = 0; i < variables.size(); i++)
-                if(ctr[i])
-                    model.set(i);
-            add_model(model.value);
+            models.insert(m.value);
 
             bool changed = false;
             for(unsigned int q = variables.size()-1; q >= 0; q--){
-                if(ctr[q] < 1 && dc.test(q)){
-                    ctr[q]++;
+                if(!m.test(q) && model[1].test(q)){
+                    m.set(q);
+
+                    cover_element<M> t;
+                    t.set_lsb(q);
+                    m &= t;
+                    t.negate();
+                    t &= model[0];
+                    m |= t;
+                    //for(unsigned int r = q+1; r < variables.size(); r++)
+                    //    if(model[0].test(r))
+                    //        m.set(r);
+                    //    else
+                    //        m.clear(r);
+
                     changed = true;
-                    for(unsigned int r = q+1; r < variables.size(); r++)
-                        ctr[r] = m.test(r);
                     break;
                 }
             }
@@ -130,8 +133,7 @@ inline void qm<M>::add_model(M im, M idc){
         }
 
     } else {
-        if(std::find(models.begin(), models.end(), im) == models.end())
-            models.push_back(im);
+        models.insert(model[0].value);
     }
 }
 

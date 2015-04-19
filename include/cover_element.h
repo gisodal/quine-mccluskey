@@ -18,6 +18,7 @@ class cover_element {
         void set_all();
         void set_lsb(unsigned int);
         void set(unsigned int);
+        void negate();
         void clear(unsigned int);
         bool power_of_two_or_zero() const;
         bool operator==(const cover_element&) const;
