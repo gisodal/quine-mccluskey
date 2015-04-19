@@ -12,6 +12,7 @@ class cover_element {
         size_t size() const;
         unsigned int count() const;
         bool test(unsigned int) const;
+        bool any() const;
         bool none() const;
         bool all() const;
         void clear_all();
@@ -24,7 +25,7 @@ class cover_element {
         bool operator==(const cover_element&) const;
         bool operator!=(const cover_element&) const;
         cover_element& operator[](unsigned int i);
-        cover_element& operator=(unsigned int);
+        cover_element& operator=(T);
         cover_element& operator=(const cover_element&);
         cover_element& operator|=(const cover_element&);
         cover_element& operator&=(const cover_element&);

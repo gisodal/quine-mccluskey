@@ -7,15 +7,17 @@
 #include <string.h>
 
 using namespace std;
+#if __LP64__
+const int MAX_QM = 128;
+typedef uint128_t T;
+#else
+const int MAX_QM = 64;
+typedef uint64_t T;
+#endif
+
 
 int main (int argc, char **argv){
-    #if __LP64__
-    const int MAX_QM = 128;
-    qm<uint128_t> q;
-    #else
-    qm<uint64_t> q;
-    const int MAX_QM = 64;
-    #endif
+    qm<T> q;
 
     opterr = 0;
     int i,c,index;
@@ -34,12 +36,16 @@ int main (int argc, char **argv){
             case 'o':
                 opt = strtok (optarg,",");
                 while(opt != NULL){
-                    #if __LP64__
-                    q.add_model((cube<uint128_t>) {atoi(opt),0});
-                    #else
-                    q.add_model((cube<uint64_t>) {atoi(opt),0});
-                    #endif
+                    cube<T> c;
+                    c[0] = atoi(opt);
+                    c[1] = 0;
+                    q.add_model(c);
                     opt = strtok (NULL, ",");
+                    printf("list:\n");
+                    for(auto it = q.models.begin(); it != q.models.end(); it++){
+                       printf("(%u,0) ", (*it));
+                    } printf("\n");
+
                 }
                 break;
             case '?':

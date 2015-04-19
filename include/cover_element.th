@@ -29,6 +29,11 @@ bool cover_element<T>::test(unsigned int i) const {
 }
 
 template <typename T>
+bool cover_element<T>::any() const {
+    return value;
+}
+
+template <typename T>
 bool cover_element<T>::none() const {
     return value == (T)0;
 }
@@ -63,7 +68,7 @@ void cover_element<T>::negate(){
     value = ~value;
 }
 
-valueypename T>
+template <typename T>
 void cover_element<T>::clear(unsigned int i){
     value &= ~(((T)1) << i);
 }
@@ -89,7 +94,7 @@ bool cover_element<T>::operator!=(const cover_element<T> &e) const {
 }
 
 template <typename T>
-cover_element<T>& cover_element<T>::operator=(unsigned int v){
+cover_element<T>& cover_element<T>::operator=(T v){
     value = v;
     return *this;
 }

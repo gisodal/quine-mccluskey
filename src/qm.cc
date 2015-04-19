@@ -163,8 +163,8 @@ template <typename P>
 void qm<M>::cpy_primes(cube<P> *primes, unsigned int PRIMES){
     this->primes.resize(PRIMES);
     for(unsigned int i = 0; i < PRIMES; i++){
-        this->primes[i][0] = (M) (primes[i][0]);
-        this->primes[i][1] = (M) (primes[i][1]);
+        this->primes[i][0] = (M) (primes[i][0].value);
+        this->primes[i][1] = (M) (primes[i][1].value);
     }
 }
 
@@ -303,7 +303,8 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
 
     // prepare cubes
     T *model_to_group = (T*) malloc(sizeof(T)*models.size());
-    for(auto it = models.begin(), unsigned int i = 0; it != models.end(); it++, i++){
+    unsigned int i = 0;
+    for(auto it = models.begin(); it != models.end(); it++, i++){
         M c = *it;
         T group = bitcount(c);
         model_to_group[i] = group;
@@ -316,10 +317,12 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
         size[i-1] = 0;
     }   size[GROUPS-1] = 0;
 
-    for(auto it = models.begin(), unsigned int i = 0; it != models.end(); it++, i++){
+    i = 0;
+    for(auto it = models.begin(); it != models.end(); it++, i++){
         M c = *it;
         uint32_t index = offset[model_to_group[i]] + size[model_to_group[i]]++;
-        ccubes[index] = {{c,0}};
+        ccubes[index][0] = c;
+        ccubes[index][1] = 0;
     }
     free(model_to_group);
 
@@ -349,7 +352,7 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
                 for(unsigned int j = 0; j < csize[group+1]; j++){
                     unsigned int oj = coffset[group+1]+j;
 
-                    T p = ccubes[oi][0] ^ ccubes[oj][0];
+                    T p = ccubes[oi][0].value ^ ccubes[oj][0].value;
                     if(ccubes[oi][1] == ccubes[oj][1] && is_power_of_two_or_zero(p)){
                         // merge
                         //SIZE = check.size(); // if(SIZE < (unsigned int) 2 * (csize[GROUPS-1] + coffset[GROUPS-1])){
@@ -414,10 +417,10 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
 template <typename M>
 template <typename T>
 inline unsigned int qm<M>::get_weight(cube<T> &c, const T &MASK) const {
-    T cover = (~(c[1])) & MASK;
+    T cover = (~(c[1].value)) & MASK;
     unsigned int weight = bitcount(cover);
     weight = (weight==1?0:weight);
-    weight += bitcount((~(c[0])) & cover);
+    weight += bitcount((~(c[0].value)) & cover);
     return weight;
 }
 
@@ -438,19 +441,18 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
     uint32_t *chart_offset = (uint32_t*) alloca(sizeof(uint32_t)*MODELS); // int chart_offset[MODELS]
     vector<T> chart;// = (T*) alloca(sizeof(T)*MODELS*PRIMES);                      // int chart[MODELS*PRIMES]
 
-    sort(primes,primes+PRIMES);
-
     // determine weight of primes
     const P MASK = ((P)1 << variables.size()) -1;
-    for(unsigned int p = 0; p < PRIMES; p++)
-        prime_weight[p] = get_weight<P>(primes[p], MASK);
+    for(unsigned int i = 0; i < PRIMES; i++)
+        prime_weight[i] = get_weight<P>(primes[i], MASK);
 
     // make prime chart
-    for(auto it = models.begin(), unsigned int i = 0; it != models.end(); it++, i++){
+    unsigned int i = 0;
+    for(auto it = models.begin(); it != models.end(); it++, i++){
         chart_offset[i] = chart.size();
         chart_size[i] = 0;
         for(unsigned int p = 0; p < PRIMES; p++){
-            if(((*it) & (~primes[p][1])) == primes[p][0]){
+            if(((*it) & (~primes[p][1].value)) == primes[p][0].value){
                 prime_cover[p].clear(i);
                 chart.push_back(p);
                 chart_size[i]++;
@@ -466,7 +468,7 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
     unsigned int *essentials = (unsigned int*) alloca(sizeof(unsigned int)*PRIMES);
     unsigned int essential_size = 0;
     unsigned weight = 0;
-    for(unsigned int i = 0; i < MODELS && !cvr.none(N); i++){
+    for(i = 0; i < MODELS && !cvr.none(N); i++){
         if(chart_size[i] == 1){
             unsigned int p = chart[chart_offset[i]];
 
@@ -508,10 +510,10 @@ int qm<M>::reduce(cube<P> *primes, unsigned int PRIMES){
         covers[0].assign(cvr,N);
         weights[0] = weight;
 
-        cube<T> *stack = (cube<T>*) alloca(sizeof(cube<T>)*PRIMES); // cube(prime index (< PRIMES), i (< max depth))
+        array<unsigned int,2> *stack = (array<unsigned int,2>*) alloca(sizeof(array<unsigned int,2>)*PRIMES); // cube(prime index (< PRIMES), i (< max depth))
         int depth = 0;
 
-        int i = 0;
+        i = 0;
         stack[depth][0] = 0;
         while(depth >= 0){
             if(covers[depth].test(i)){
@@ -595,7 +597,7 @@ bool qm<M>::reduced(){
         return true;
     else {
         for(unsigned int i = 0; i < primes.size(); i++)
-            if(primes[i][1] > 0)
+            if(primes[i][1].any())
                 return true;
     }
 
