@@ -69,19 +69,19 @@ class qm {
         size_t required_size();
         void print();
 
-        template <typename T> int compute_primes(cube<T>*);
-        template <typename T> int quine_mccluskey(cube<T>*);
-        template <typename P, typename T> int reduce(cube<P>*, unsigned int);
+        template <typename T> int compute_primes(std::vector< cube<T> >&);
+        template <typename T> int quine_mccluskey(std::vector< cube<T> >&);
+        template <typename P, typename T> int reduce(std::vector< cube<P> >&);
         template <typename T> inline unsigned int get_weight(cube<T>&, const T&) const;
         template <typename P> void print_cubes(cube<P>*, unsigned int *, unsigned int);
-        template <typename P> void cpy_primes(cube<P>*, unsigned int);
+        template <typename P> void cpy_primes(std::vector< cube<P> >&);
         void get_clause(std::vector<uint32_t>&, std::vector<uint8_t>&, unsigned int);
         unsigned int get_primes_size();
         void remove_prime(cube<M>&);
 
         bool reduced();
         int unate_cover();
-    //private:
+    private:
         size_t cube_size;
         std::vector<unsigned int> variables;         // variables with least significant bit first (variables[0])
         std::set< M > models;

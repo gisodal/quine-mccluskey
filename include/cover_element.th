@@ -84,6 +84,11 @@ cover_element<T>& cover_element<T>::operator[](unsigned int i){
 }
 
 template <typename T>
+bool cover_element<T>::operator<(const cover_element<T> &e) const {
+    return value < e.value;
+}
+
+template <typename T>
 bool cover_element<T>::operator==(const cover_element<T> &e) const {
     return value == e.value;
 }
