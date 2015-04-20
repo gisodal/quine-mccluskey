@@ -1,13 +1,6 @@
 #ifndef QM_H
 #define QM_H
 
-#include <vector>
-#include <stdint.h>
-#include <stddef.h>
-#include <stdio.h>
-#include <algorithm>
-#include <unordered_set>
-
 #if __LP64__
 
 #ifndef _INT128_T
@@ -52,6 +45,12 @@ typedef __uint128_t uint128_t;
 
 #include "cube.h"
 #include "cover_element.h"
+#include <stdint.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <algorithm>
+#include <unordered_set>
+#include <set>
 #include <vector>
 
 template <typename M>
@@ -85,7 +84,7 @@ class qm {
     //private:
         size_t cube_size;
         std::vector<unsigned int> variables;         // variables with least significant bit first (variables[0])
-        std::unordered_set< M > models;
+        std::set< M > models;
         std::vector< cube<M> > primes;
 };
 

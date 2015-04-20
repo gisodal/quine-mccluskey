@@ -8,7 +8,7 @@
 
 //template<typename T>
 //using cube = std::array< cover_element<T>,2>;
-
+#include <tuple>
 template <typename T>
 class cube : public std::tuple< cover_element<T>, cover_element<T> > {
     public:
