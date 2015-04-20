@@ -16,9 +16,7 @@
 PROJECT =
 
 # project version
-VERSION    = 1
-SUBVERSION = 0
-PATCHLEVEL = 0
+include VERSION
 
 # library and include paths (space separated value)
 LIBRARY_DIR =
