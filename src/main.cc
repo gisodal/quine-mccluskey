@@ -60,8 +60,6 @@ int main (int argc, char **argv){
         fprintf(stderr, "Ingoring argument '%s'\n", argv[index]);
 
     q.solve();
-    if(q.reduced())
-        printf("reduced!\n");
     q.print();
 
     return 0;

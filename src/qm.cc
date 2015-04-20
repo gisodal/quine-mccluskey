@@ -170,46 +170,43 @@ void qm<M>::cpy_primes(cube<P> *primes, unsigned int PRIMES){
 
 template <typename M>
 int qm<M>::canonical_primes(){
-    //void *data = alloca(required_size());
-
-    //if(!data){
-    //    printf("stack allocation failed at size %u (%.2fMb)\n", required_size(), required_size()/(float)1024);
-    //    return -2;
-    //}
     int PRIMES;
-    void *vprimes;
+    void *vprimes = NULL;
 
     unsigned int VARIABLES = variables.size();
     if(VARIABLES <= 8){
         cube_size = 8;
-        vprimes = alloca(sizeof(cube<uint8_t>)*models.size());
+        vprimes = malloc(sizeof(cube<uint8_t>)*models.size());
         PRIMES = compute_primes<uint8_t>(cube<uint8_t>::cast(vprimes));
         cpy_primes(cube<uint8_t>::cast(vprimes), PRIMES);
     } else if(VARIABLES <= 16){
         cube_size = 16;
-        vprimes = alloca(sizeof(cube<uint16_t>)*models.size());
+        vprimes = malloc(sizeof(cube<uint16_t>)*models.size());
         PRIMES = compute_primes<uint16_t>(cube<uint16_t>::cast(vprimes));
         cpy_primes(cube<uint16_t>::cast(vprimes), PRIMES);
     } else if(VARIABLES <= 32){
         cube_size = 32;
-        vprimes = alloca(sizeof(cube<uint32_t>)*models.size());
+        vprimes = malloc(sizeof(cube<uint32_t>)*models.size());
         PRIMES = compute_primes<uint32_t>(cube<uint32_t>::cast(vprimes));
         cpy_primes(cube<uint32_t>::cast(vprimes), PRIMES);
     } else if(VARIABLES <= 64){
         cube_size = 64;
-        vprimes = alloca(sizeof(cube<uint64_t>)*models.size());
+        vprimes = malloc(sizeof(cube<uint64_t>)*models.size());
         PRIMES = compute_primes<uint64_t>(cube<uint64_t>::cast(vprimes));
         cpy_primes(cube<uint64_t>::cast(vprimes), PRIMES);
     }
     #if __LP64__
     else if(VARIABLES <= 128){
         cube_size = 128;
-        vprimes = alloca(sizeof(cube<uint128_t>)*models.size());
+        vprimes = malloc(sizeof(cube<uint128_t>)*models.size());
         PRIMES = compute_primes<uint128_t>(cube<uint128_t>::cast(vprimes));
         cpy_primes(cube<uint128_t>::cast(vprimes), PRIMES);
     }
     #endif
     else return -1;
+
+    if(vprimes)
+        free(vprimes);
 
     return PRIMES;
 }
@@ -218,6 +215,40 @@ template <typename M>
 template <typename T>
 int qm<M>::compute_primes(cube<T>* primes){
     unsigned int PRIMES = quine_mccluskey<T>(primes);
+
+    printf("(");
+    for(unsigned int s = 0; s < PRIMES; s++){
+        cover_element<T> p0 = primes[s][0];
+        cover_element<T> p1 = primes[s][1];
+
+        if(s > 0)
+           printf("  \u2228  "); // or
+
+        printf("(");
+        unsigned int size = 0;
+        for(unsigned i = 0; i < variables.size(); i++){
+            if(p0.test(i) || !p1.test(i)){
+                if(size++ > 0)
+                    printf(" \u2227 "); // and
+                if(!p0.test(i) && !p1.test(i))
+                    printf("\u00AC"); // not
+
+                if(variables[i] < 26)
+                    printf("%c", 'a' + variables[i]);
+                else
+                    printf("%d",variables[i]);
+            }
+        }
+        printf(")");
+    }
+    printf(")\n");
+
+
+
+
+
+
+
     if(PRIMES > 0){
         unsigned int MODELS = models.size();
         if(MODELS <= 8){
@@ -295,8 +326,6 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
     unsigned int GROUPS = VARIABLES+1;
     unsigned int PRIMES = 0;
 
-    //cube<T> *primes = (cube<T>*) data;
-
     unsigned int *size = (unsigned int*) alloca(sizeof(unsigned int)*2*GROUPS);
     memset(size, 0, sizeof(unsigned int)*2*GROUPS);
 
@@ -348,8 +377,10 @@ int qm<M>::quine_mccluskey(cube<T>* primes){
     }
 
     while(groups){
+        printf("groups %d\n", groups);
         unsigned int ncubes_size = 0;
         for(unsigned int group = 0; group < groups; group++){
+            printf("  group %d (%lu:%lu) %lu\n", group, csize[group], csize[group+1], SIZE);
             noffset[group] = ncubes_size;
             nsize[group] = 0;
 
