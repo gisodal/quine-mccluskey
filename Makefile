@@ -16,7 +16,9 @@
 PROJECT =
 
 # project version
-include VERSION
+VERSION    = 1
+SUBVERSION = 0
+PATCHLEVEL = 0
 
 # library and include paths (space separated value)
 LIBRARY_DIR =
@@ -105,7 +107,7 @@ DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) all debug-all install first build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
+.PHONY: $(PROJECT) all install build rebuild debug-all install first library static dynamic debug debug-optimized debug-library profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -229,9 +231,6 @@ lines:
 clean:
 	$(RM) -r $(ODIR) $(BDIR) $(LDIR)
 
-.PHONY: $(PROJECT) all debug-all install first build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
-
-
 # echo make options
 help:
 	@echo "Usage     :"
@@ -242,7 +241,6 @@ help:
 	@echo "    rebuild  : recompile"
 	@echo "    all      : compile binary and libraries"
 	@echo "    debug    : compile with debug symbols"
-	@echo "    odebug   : compile with optimizations and debug symbols"
 	@echo "    lines    : print #lines of code to compile"
 	@echo "    library  : create static and dynamic libraries"
 	@echo "    static   : create static library"
@@ -254,10 +252,10 @@ help:
 	@echo "    * = default"
 	@echo ""
 	@echo "Directory hierarchy :"
-	@echo "    src      : source files (*.[c,cc,cpp])"
+	@echo "    src      : source files (*.$(EXT))"
 	@echo "    include  : header files (*.h)"
 	@echo "    obj      : object and dependency files"
 	@echo "    lib      : static/shared libraries"
-	@echo "    bin      : executabe binary"
-	@echo "    tar      : tarballs of source"
+	@echo "    bin      : executable binary"
+	@echo "    tar      : source tarballs"
 

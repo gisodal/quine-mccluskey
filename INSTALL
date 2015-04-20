@@ -1,3 +1,7 @@
 # INSTALL
 
-Just run 'make'. The binary is installed <source dir>/bin.
+Just run 'make'. The binary is installed in path/to/source/bin.
+
+to run:
+bin/quine-mccluskey -v <#variables> -o [model1 [, model2 [, ...] ] ]
+
