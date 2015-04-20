@@ -107,7 +107,7 @@ DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: all $(PROJECT) all debug-all install first build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
+.PHONY: $(PROJECT) all install build rebuild debug-all install first library static dynamic debug debug-optimized debug-library profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -237,23 +237,25 @@ help:
 	@echo "    make [option]"
 	@echo ""
 	@echo "Options   :"
-	@echo "    build*   : compile"
+	@echo "    build*   : compile to binary"
 	@echo "    rebuild  : recompile"
+	@echo "    all      : compile binary and libraries"
 	@echo "    debug    : compile with debug symbols"
-	@echo "    odebug   : compile with optimizations and debug symbols"
 	@echo "    lines    : print #lines of code to compile"
-	@echo "    library  : create libraries"
+	@echo "    library  : create static and dynamic libraries"
+	@echo "    static   : create static library"
+	@echo "    dynamic  : create dynamic library"
 	@echo "    install  : install project at PREFIX"
-	@echo "    clean    : remove object files and binary"
+	@echo "    clean    : remove object files, libraries and binary"
 	@echo "    tarball  : create tarball of source files"
 	@echo ""
 	@echo "    * = default"
 	@echo ""
 	@echo "Directory hierarchy :"
-	@echo "    src      : source files (*.[c,cc,cpp])"
+	@echo "    src      : source files (*.$(EXT))"
 	@echo "    include  : header files (*.h)"
 	@echo "    obj      : object and dependency files"
 	@echo "    lib      : static/shared libraries"
-	@echo "    bin      : executabe binary"
-	@echo "    tar      : tarballs of source"
+	@echo "    bin      : executable binary"
+	@echo "    tar      : source tarballs"
 
