@@ -229,20 +229,26 @@ lines:
 clean:
 	$(RM) -r $(ODIR) $(BDIR) $(LDIR)
 
+.PHONY: $(PROJECT) all debug-all install first build rebuild debug odebug static dynamic debug-library library profile assembly clean tarball lines help
+
+
 # echo make options
 help:
 	@echo "Usage     :"
 	@echo "    make [option]"
 	@echo ""
 	@echo "Options   :"
-	@echo "    build*   : compile"
+	@echo "    build*   : compile to binary"
 	@echo "    rebuild  : recompile"
+	@echo "    all      : compile binary and libraries"
 	@echo "    debug    : compile with debug symbols"
 	@echo "    odebug   : compile with optimizations and debug symbols"
 	@echo "    lines    : print #lines of code to compile"
-	@echo "    library  : create libraries"
+	@echo "    library  : create static and dynamic libraries"
+	@echo "    static   : create static library"
+	@echo "    dynamic  : create dynamic library"
 	@echo "    install  : install project at PREFIX"
-	@echo "    clean    : remove object files and binary"
+	@echo "    clean    : remove object files, libraries and binary"
 	@echo "    tarball  : create tarball of source files"
 	@echo ""
 	@echo "    * = default"
