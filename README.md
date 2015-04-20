@@ -5,9 +5,9 @@ The Quine-McCluskey Algorithm in C++
 
 This is an implementation of the Quine-McCluskey algorithm which produced prime implicants in sum-of-product (SOP) form. Patrick's method is used to obtain the canonical SOP form.
 
-## Example
+## Usage
 
-> bin/quine-mccluskey -v <#variables> -o <model1[,model2[,...]]>
+> bin/quine-mccluskey -v <#variables> -o <#model1[,#model2[,...]]>
 
 For example:
 > bin/quine-mccluskey -v3 -o0,2,5,7
