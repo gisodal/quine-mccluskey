@@ -24,4 +24,6 @@ tar
 bin
 obj
 lib
+debug
+pylibs
 
