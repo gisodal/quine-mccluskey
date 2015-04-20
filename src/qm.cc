@@ -12,7 +12,8 @@
 #include <iterator>
 #include "cover.h"
 #include <set>
-
+#include "jobqueue.h"
+#include <unistd.h>
 using namespace std;
 
 static inline uint32_t log2(const uint32_t x) { // for x86 and x86-64 architecture
@@ -286,58 +287,113 @@ void qm<M>::print(){
     printf(")\n");
 }
 
+template <typename T>
+struct thread_data_t {
+    pthread_mutex_t mutex;
+    vector< cube<T> > primes;
+    vector< set< cube<T> > > cset;
+    vector< set< cube<T> > > nset;
+    jobqueue<int> q;
+    thread_data_t(unsigned int N){
+        cset.resize(N);
+        nset.resize(N);
+        pthread_mutex_init(&mutex, NULL);
+    };
+    ~thread_data_t(){
+        pthread_mutex_destroy(&mutex);
+    };
+};
+
+template <typename T>
+void* thread_function(void *d){
+    thread_data_t<T> *data = (thread_data_t<T>*) d;
+    unsigned int id = pthread_self();
+
+    int group = data->q.get();
+    while(group >= 0){
+        sleep(1);
+        printf("  %u) group: %d\n", id, group);
+        set< cube<T> > check;
+        for(auto cit = data->cset[group].begin(); cit != data->cset[group].end(); cit++){
+            for(auto nit = data->cset[group+1].begin(); nit != data->cset[group+1].end(); nit++){
+                cube<T> cc = *cit;
+                cube<T> nc = *nit;
+
+                T p = cc[0].value ^ nc[0].value;
+                if(cc[1] == nc[1] && is_power_of_two_or_zero(p)){
+                    // merge
+                    cube<T> c;
+                    c[0].value = cc[0].value & nc[0].value;
+                    c[1] = cc[1].value | p;
+                    check.insert(cc);
+                    check.insert(nc);
+
+                    data->nset[group].insert(c);
+                }
+            }
+        }
+
+        printf("check: %u cset: %u\n", check.size(), data->cset[group].size());
+        if(check.size() != data->cset[group].size()){
+            std::vector< cube<T> > primes;
+            std::set_difference(data->cset[group].begin(), data->cset[group].end(), check.begin(), check.end(), inserter(primes, primes.begin()));
+            data->cset[group].clear();
+
+            pthread_mutex_lock(&data->mutex);
+            data->primes.insert(data->primes.end(), primes.begin(), primes.end());
+            pthread_mutex_unlock(&data->mutex);
+        }
+
+        group = data->q.get();
+    }
+
+    return NULL;
+}
+
 template <typename M>
 template <typename T>
 int qm<M>::quine_mccluskey(std::vector< cube<T> > &primes){
     const unsigned int VARIABLES = variables.size();
     const unsigned int GROUPS = VARIABLES+1;
 
-    vector< set< cube<T> > > cset(GROUPS);
-    vector< set< cube<T> > > nset(GROUPS);
+    thread_data_t<T> data(GROUPS);
 
     // prepare cubes
     for(auto it = models.begin(); it != models.end(); it++){
         cube<T> c;
         c[0] = *it;
         c[1].clear_all();
-        cset[bitcount(*it)].insert(c);
+        data.cset[bitcount(*it)].insert(c);
     }
 
     // quine-mccluskey
     unsigned int groups = GROUPS-1;
     unsigned int MAX_THREADS = std::thread::hardware_concurrency();
-    //pthread_t *thread = alloca(sizeof(pthread_t)*MAX_THREADS);
+    if(MAX_THREADS == 0)
+       MAX_THREADS = 4;
 
+    MAX_THREADS = 2;
+    vector <pthread_t> thread(MAX_THREADS);
     vector< set< cube<T> > > check(groups);
     while(groups){
-        for(unsigned int group = 0; group < groups; group++){
-            for(auto cit = cset[group].begin(); cit != cset[group].end(); cit++){
-                for(auto nit = cset[group+1].begin(); nit != cset[group+1].end(); nit++){
-                    cube<T> cc = *cit;
-                    cube<T> nc = *nit;
+        printf("groups: %u\n", groups);
+        for(int group = 0; group < groups-1; group++)
+            data.q.add(group);
 
-                    T p = cc[0].value ^ nc[0].value;
-                    if(cc[1] == nc[1] && is_power_of_two_or_zero(p)){
-                        // merge
-                        cube<T> c;
-                        c[0].value = cc[0].value & nc[0].value;
-                        c[1] = cc[1].value | p;
-                        check[group].insert(cc);
-                        check[group].insert(nc);
+        // start threads
+        for(unsigned int i = 0; i < MAX_THREADS; i++)
+            if(pthread_create(&(thread[i]), NULL, &thread_function<T>, (void*) &data) != 0)
+                fprintf(stderr, "Couldn't start thread %d...", i);
 
-                        nset[group].insert(c);
-                    }
-                }
-            }
-        }
+        // wait until finished
+        for(unsigned int i = 0; i < MAX_THREADS; i++)
+            pthread_join(thread[i], NULL);
 
         // get primes
-        swap(cset, nset);
-        for(unsigned int i = 0; i < groups; i++){
-            set_difference(nset[i].begin(), nset[i].end(), check[i].begin(), check[i].end(), inserter(primes, primes.begin()));
-            nset[i].clear();
-            check[i].clear();
-        }
+        primes.insert(primes.end(), data.primes.begin(), data.primes.end());
+        data.primes.clear();
+
+        swap(data.cset, data.nset);
         groups--;
     }
 

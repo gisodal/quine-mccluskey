@@ -26,7 +26,7 @@ INCLUDE_DIR =
 
 # static and shared libraries to be linked (space separated values)
 STATIC_LIBRARIES =
-SHARED_LIBRARIES =
+SHARED_LIBRARIES = pthread
 
 # install
 PREFIX = $(shell cd "$( dirname "$0" )" && cd ../.. && pwd)
