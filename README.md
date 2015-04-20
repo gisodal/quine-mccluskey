@@ -7,9 +7,11 @@ This is an implementation of the Quine-McCluskey algorithm which produced prime 
 
 ## Example
 
-> bin/quine-mccluskey -v <#variables> -o [model1[,model2[,...]]]
+> bin/quine-mccluskey -v <#variables> -o <model1[,model2[,...]]>
 
+For example:
 > bin/quine-mccluskey -v3 -o0,2,5,7
+
 ((¬a ∧ ¬c)  ∨  (a ∧ c))
 
 ## Installation
