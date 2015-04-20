@@ -15,7 +15,6 @@ const int MAX_QM = 64;
 typedef uint64_t T;
 #endif
 
-
 int main (int argc, char **argv){
     qm<T> q;
 
@@ -42,15 +41,18 @@ int main (int argc, char **argv){
                 break;
             case '?':
                 if (optopt == 'o')
-                    fprintf (stderr, "Option -%c requires comma separated argument.\n", optopt);
+                    fprintf (stderr, "Option -%c requires comma separated list of models.\n", optopt);
                 else if (optopt == 'v')
-                    fprintf (stderr, "Option -%c requires an argument.\n", optopt);
+                    fprintf (stderr, "Option -%c requires #variables as argument.\n", optopt);
                 else if (isprint (optopt))
                     fprintf (stderr, "Unknown option `-%c'.\n", optopt);
                 else
                     fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
+
+                fprintf (stderr, "Usage: bin/quine-mccluskey -v <#variables> -o <model1[,model2[,...]]>\n");
                 return 1;
             default:
+                    fprintf (stderr, "Usage: bin/quine-mccluskey -v <#variables> -o <model1[,model2[,...]]>\n");
                 return 1;
         }
     }
@@ -65,61 +67,3 @@ int main (int argc, char **argv){
     return 0;
 }
 
-
-
-
-
-//
-//int main(){
-//    qm q;
-//
-//
-//using namespace std;
-//
-//int main(int argc, char** argv) {
-//    int opt;
-//    bool flagA = false;
-//    bool flagB = false;
-//
-//    // Shut GetOpt error messages down (return '?'):
-//    opterr = 0;
-//
-//    // Retrieve the options:
-//    while ( (opt = getopt(argc, argv, "ab")) != -1 ) {  // for each option...
-//        switch ( opt ) {
-//            case 'a':
-//                    flagA = true;
-//                break;
-//            case 'b':
-//                    flagB = true;
-//                break;
-//            case '?':  // unknown option...
-//                    cerr << "Unknown option: '" << char(optopt) << "'!" << endl;
-//                break;
-//        }
-//    }
-//
-//    // Debug:
-//    cout << "flagA = " << flagA << endl;
-//    cout << "flagB = " << flagB << endl;
-//
-//    return 0;
-//}
-//
-//
-//
-//
-//
-//
-//
-//    q.add_variable(0);
-//    q.add_variable(1);
-//    q.add_variable(2);
-//    q.add_model(0);
-//    q.add_model(1);
-//    q.add_model(3);
-//    q.add_model(4);
-//    q.add_model(6);
-//    q.add_model(7);
-//    q.compute_primes();
-//}
