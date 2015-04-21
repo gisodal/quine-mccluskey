@@ -370,7 +370,6 @@ int qm<M>::quine_mccluskey(std::vector< cube<T> > &primes){
         // wait until finished
         for(unsigned int i = 0; i < MAX_THREADS; i++)
             pthread_join(thread[i], NULL);
-        //thread_function<T>((void*) &data);
 
         // get primes
         for(unsigned int group = 0; group < groups; group++){
