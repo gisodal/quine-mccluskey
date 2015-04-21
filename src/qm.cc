@@ -168,8 +168,8 @@ template <typename P>
 void qm<M>::cpy_primes(std::vector< cube<P> > &primes){
     this->primes.resize(primes.size());
     for(unsigned int i = 0; i < primes.size(); i++){
-        this->primes[i][0] = (M) (primes[i][0].value);
-        this->primes[i][1] = (M) (primes[i][1].value);
+        this->primes[i][0].value = (M) (primes[i][0].value);
+        this->primes[i][1].value = (M) (primes[i][1].value);
     }
 }
 
@@ -303,10 +303,8 @@ struct thread_data_t {
 template <typename T>
 void* thread_function(void *d){
     thread_data_t<T> *data = (thread_data_t<T>*) d;
-    unsigned int id = pthread_self();
     int group = data->q.get();
     while(group >= 0){
-        printf("  %u) group: %d\n", id, group);
         unsigned int i = 0;
         for(auto cit = data->cset[group].begin(); cit != data->cset[group].end(); cit++, i++){
             unsigned int j = 0;
@@ -353,27 +351,26 @@ int qm<M>::quine_mccluskey(std::vector< cube<T> > &primes){
     // quine-mccluskey
     unsigned int groups = GROUPS;
     unsigned int MAX_THREADS = std::thread::hardware_concurrency();
+    printf("threads: %u\n", MAX_THREADS);
     if(MAX_THREADS == 0)
        MAX_THREADS = 4;
 
-    MAX_THREADS = 2;
     vector <pthread_t> thread(MAX_THREADS);
     while(groups > 0){
-        printf("groups: %u\n", groups);
-        for(int group = 0; group < groups; group++){
+        for(int group = 0; group < (int) groups; group++){
             data.check[group].assign(data.cset[group].size(),0);
-            if(group < groups-1)
+            if(group < (int) groups-1)
                 data.q.add(group);
         }
 
-        //// start threads
-        //for(unsigned int i = 0; i < MAX_THREADS; i++)
-        //    if(pthread_create(&(thread[i]), NULL, &thread_function<T>, (void*) &data) != 0)
-        //        fprintf(stderr, "Couldn't start thread %d...", i);
+        // start threads
+        for(unsigned int i = 0; i < MAX_THREADS; i++)
+            if(pthread_create(&(thread[i]), NULL, &thread_function<T>, (void*) &data) != 0)
+                fprintf(stderr, "Couldn't start thread %d...", i);
 
-        //// wait until finished
-        //for(unsigned int i = 0; i < MAX_THREADS; i++)
-        //    pthread_join(thread[i], NULL);
+        // wait until finished
+        for(unsigned int i = 0; i < MAX_THREADS; i++)
+            pthread_join(thread[i], NULL);
         thread_function<T>((void*) &data);
 
         // get primes
@@ -564,7 +561,11 @@ int qm<M>::reduce(std::vector< cube<P> >&primes){
     //    printf(" %u:(%lu, %lu)", get_weight<P>(primes[essentials[i]],MASK), primes[essentials[i]][0], primes[essentials[i]][1]);
     //}
     //printf("\n");
-    //print_cubes<P>(primes, essentials,essential_size+non_essential_size);
+
+    std::sort(essentials, essentials+essential_size+non_essential_size);
+    for(unsigned int i = 0; i < essential_size+non_essential_size; i++)
+        primes[i] = primes[essentials[i]];
+    primes.resize(essential_size+non_essential_size);
 
     free(prime_cover_ptr);
     return essential_size+non_essential_size;

@@ -142,7 +142,7 @@ class QM:
       sigma = nsigma
 
     if debug:
-      print "primes: "+str(primes)+"\n"
+      print "primes: "+str(sorted(primes))+"\n"
     return primes
 
   def unate_cover(self, primes, ones):
@@ -366,6 +366,7 @@ def main():
         stdout.write('tautology\n')
     else:
         for cover in soln[1]:
+            #stdout.write("canonical: "+str(sorted(cover))+"\n")
             #stdout.write(str(soln[0])+":")
             #for prime in sorted(list(cover)):
             #    stdout.write(" "+str(qm.calculate_complexity_term(prime))+":"+str(prime))
