@@ -302,9 +302,11 @@ struct thread_data_t {
 
 template <typename T>
 void* thread_function(void *d){
+
     thread_data_t<T> *data = (thread_data_t<T>*) d;
     int group = data->q.get();
     while(group >= 0){
+        printf("    group %u\n",group);
         unsigned int i = 0;
         for(auto cit = data->cset[group].begin(); cit != data->cset[group].end(); cit++, i++){
             unsigned int j = 0;
@@ -356,6 +358,7 @@ int qm<M>::quine_mccluskey(std::vector< cube<T> > &primes){
 
     vector <pthread_t> thread(MAX_THREADS);
     while(groups > 0){
+        printf("groups: %u\n", groups);
         for(int group = 0; group < (int) groups; group++){
             data.check[group].assign(data.cset[group].size(),0);
             if(group < (int) groups-1)
