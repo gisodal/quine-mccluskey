@@ -123,13 +123,6 @@ void qm<M>::clear(){
 
 template <typename M>
 int qm<M>::solve(){
-    //printf("     -v%d -o", variables.size());
-    //for(unsigned int i = 0; i < models.size() && i < 150; i++){
-    //    if(i > 0)
-    //        printf(",");
-    //    printf("%d", models[i]);
-    //}
-    //printf("\n");
     primes.resize(0);
     if(models.size() == 0)
         return 0;
@@ -216,7 +209,6 @@ template <typename M>
 template <typename T>
 int qm<M>::compute_primes(std::vector< cube<T> >& primes){
     unsigned int PRIMES = quine_mccluskey<T>(primes);
-
     if(PRIMES > 0){
         unsigned int MODELS = models.size();
         if(MODELS <= 8){
@@ -258,7 +250,7 @@ void qm<M>::get_clause(vector<uint32_t> &literals, vector<uint8_t> &negated, uns
 }
 
 template <typename M>
-void qm<M>::print(){
+void qm<M>::print(bool characters){
     printf("(");
     for(unsigned int s = 0; s < primes.size(); s++){
         cover_element<M> p0 = primes[s][0];
@@ -276,7 +268,7 @@ void qm<M>::print(){
                 if(!p0.test(i) && !p1.test(i))
                     printf("\u00AC"); // not
 
-                if(variables[i] < 26)
+                if(characters && variables[i] < 26)
                     printf("%c", 'a' + variables[i]);
                 else
                     printf("%d",variables[i]);
@@ -306,7 +298,7 @@ void* thread_function(void *d){
     thread_data_t<T> *data = (thread_data_t<T>*) d;
     int group = data->q.get();
     while(group >= 0){
-        printf("    group %u\n",group);
+        //printf("    group %u\n",group);
         unsigned int i = 0;
         for(auto cit = data->cset[group].begin(); cit != data->cset[group].end(); cit++, i++){
             unsigned int j = 0;
@@ -358,7 +350,7 @@ int qm<M>::quine_mccluskey(std::vector< cube<T> > &primes){
 
     vector <pthread_t> thread(MAX_THREADS);
     while(groups > 0){
-        printf("groups: %u\n", groups);
+        //printf("groups: %u\n", groups);
         for(int group = 0; group < (int) groups; group++){
             data.check[group].assign(data.cset[group].size(),0);
             if(group < (int) groups-1)
@@ -386,7 +378,6 @@ int qm<M>::quine_mccluskey(std::vector< cube<T> > &primes){
         swap(data.cset, data.nset);
         groups--;
     }
-
     return primes.size();
 }
 
@@ -442,7 +433,7 @@ int qm<M>::reduce(std::vector< cube<P> >&primes){
     cvr.init(0,N);
     cvr.set_lsb(MODELS);
     //unsigned int *essentials = (unsigned int*) alloca(sizeof(unsigned int)*PRIMES);
-    unsigned int *essentials = (unsigned int*) alloca(sizeof(unsigned int)*PRIMES);
+    unsigned int essentials[PRIMES];
     unsigned int essential_size = 0;
     unsigned weight = 0;
     for(i = 0; i < MODELS && !cvr.none(N); i++){
@@ -465,31 +456,29 @@ int qm<M>::reduce(std::vector< cube<P> >&primes){
             }
         }
     }
-
     // find minimal prime implicate representation
     unsigned int non_essential_size = 0;
     unsigned int min_weight = ~0u;
-    //unsigned int max_depth = 0;
+    const unsigned int MAX_DEPTH = cvr.count(N)+1;
     if(cvr.any(N)){
         unsigned int *non_essentials = essentials+essential_size;
-        //void *data = alloca((cover<T,0>::bytes(N))*PRIMES+sizeof(uint16_t)*PRIMES);
         size_t covers_size_t = cover_list<T>::bytes(MODELS, N);
-        cover_list<T> &covers = cover_list<T>::cast(alloca(covers_size_t*PRIMES+sizeof(uint16_t)*PRIMES));
-        if(!&covers){
-            printf("failed to allocate covers\n");
+        cover_list<T> *covers_ptr = (cover_list<T>*) malloc(covers_size_t*MAX_DEPTH);
+        if(!covers_ptr){
+            fprintf(stderr, "failed to allocate covers\n");
             return -1;
         }
+        cover_list<T> &covers = *covers_ptr;
+
         covers.set_cover_size(N);
         covers.set_size(PRIMES);
-
-        uint16_t *weights = (uint16_t*) covers.end();
-
         covers[0].assign(cvr,N);
+
+        array<unsigned int,2> stack[PRIMES];//; = (array<unsigned int,2>*) alloca(sizeof(array<unsigned int,2>)*PRIMES); // cube(prime index (< PRIMES), i (< max depth))
+        uint16_t weights[MAX_DEPTH];
         weights[0] = weight;
 
-        array<unsigned int,2> *stack = (array<unsigned int,2>*) alloca(sizeof(array<unsigned int,2>)*PRIMES); // cube(prime index (< PRIMES), i (< max depth))
         int depth = 0;
-
         i = 0;
         stack[depth][0] = 0;
         while(depth >= 0){
@@ -550,24 +539,16 @@ int qm<M>::reduce(std::vector< cube<P> >&primes){
             }
             i++;
         }
+        free(covers_ptr);
     }
-
     if(min_weight == (unsigned int) ~0){
         min_weight = (essential_size+non_essential_size==1?weight-1:weight);
     }
-
-    //printf("%u\n", max_depth);
-    //printf("%u:", min_weight);
-    //for(unsigned int i = 0; i < essential_size+non_essential_size; i++){
-    //    printf(" %u:(%lu, %lu)", get_weight<P>(primes[essentials[i]],MASK), primes[essentials[i]][0], primes[essentials[i]][1]);
-    //}
-    //printf("\n");
 
     std::sort(essentials, essentials+essential_size+non_essential_size);
     for(unsigned int i = 0; i < essential_size+non_essential_size; i++)
         primes[i] = primes[essentials[i]];
     primes.resize(essential_size+non_essential_size);
-
     free(prime_cover_ptr);
     return essential_size+non_essential_size;
 }
@@ -587,12 +568,11 @@ bool qm<M>::reduced(){
 
 template <class M>
 template <class P>
-void qm<M>::print_cubes(cube<P> *primes, unsigned int *essentials, unsigned int SIZE){
+void qm<M>::print_cubes(std::vector< cube<P> > &primes){
     printf("(");
-    for(unsigned int s = 0; s < SIZE; s++){
-        unsigned int e = essentials[s];
-        cover_element<P> p0 = *((cover_element<P>*) &primes[e][0]);
-        cover_element<P> p1 = *((cover_element<P>*) &primes[e][1]);
+    for(unsigned int s = 0; s < primes.size(); s++){
+        cover_element<P> &p0 = primes[s][0];
+        cover_element<P> &p1 = primes[s][1];
 
         if(s > 0)
            printf("  \u2228  "); // or
@@ -606,10 +586,7 @@ void qm<M>::print_cubes(cube<P> *primes, unsigned int *essentials, unsigned int 
                 if(!p0.test(i) && !p1.test(i))
                     printf("\u00AC"); // not
 
-                if(variables[i] < 26)
-                    printf("%c", 'a' + variables[i]);
-                else
-                    printf("%d",variables[i]);
+                printf("%d",variables[i]);
             }
         }
         printf(")");

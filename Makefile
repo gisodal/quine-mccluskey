@@ -55,6 +55,8 @@ TDIR = tar
 UDIR = usr
 DIR  = $(shell cd "$( dirname "$0" )" && pwd)
 ARCH = $(shell getconf LONG_BIT)
+INSTALLBDIR = $(PREFIX)/bin
+INSTALLLDIR = $(PREFIX)/lib$(ARCH)
 
 ifeq ($(ARCH),32)
 	DFLAG = -gdwarf-3
@@ -107,7 +109,7 @@ DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: $(PROJECT) all install build rebuild debug-all install first library static dynamic debug debug-optimized debug-library profile assembly clean tarball lines help
+.PHONY: $(PROJECT) all install build rebuild install install-bin install-static install-dynamic first library static dynamic debug debug-all debug-optimized debug-library profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -142,11 +144,16 @@ debug-all: debug-library debug
 
 all: library build
 
-install:
-	mkdir -p $(PREFIX)/bin
-	mkdir -p $(PREFIX)/lib$(ARCH)
+install-bin: $(INSTALLBDIR)
 	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin
-	cp $(LDIR)/* $(PREFIX)/lib$(ARCH)
+
+install-static: $(INSTALLLDIR)
+	cp $(LDIR)/lib$(PROJECT).a $(PREFIX)/lib$(ARCH)
+
+install-dynamic: $(INSTALLLDIR)
+	cp $(LDIR)/lib$(PROJECT).so* $(PREFIX)/lib$(ARCH)
+
+install: install-bin install-static install-dynamic
 
 # create libraries
 debug-library: DLIB = debug-
@@ -212,6 +219,12 @@ $(IDIR):
 
 $(TDIR):
 	mkdir $(TDIR)
+
+$(INSTALLLDIR):
+	mkdir $(INSTALLLDIR)
+
+$(INSTALLBDIR):
+	mkdir $(INSTALLBDIR)
 
 # create a tarball from source files
 tarball: TARFILE = $$(echo $(TDIR)/$(PROJECT)_$$(date +"%Y_%m_%d_%H_%M_%S") | tr -d ' ').tar.xz

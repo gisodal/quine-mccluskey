@@ -60,7 +60,7 @@ int main (int argc, char **argv){
         fprintf(stderr, "Ingoring argument '%s'\n", argv[index]);
 
     q.solve();
-    q.print();
+    q.print(true);
 
     return 0;
 }
