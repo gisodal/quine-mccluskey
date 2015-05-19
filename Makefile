@@ -143,7 +143,7 @@ debug-all: debug-library debug
 
 all: static build
 
-install-bin: $(INSTALLBDIR)
+install-bin: $(PREFIX)/bin
 	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin
 
 install-static: $(PREFIX)/$(LDIR)$(ARCH)
@@ -152,13 +152,13 @@ install-static: $(PREFIX)/$(LDIR)$(ARCH)
 install-dynamic: $(PREFIX)/$(LDIR)$(ARCH)
 	cp $(LDIR)/$(LDIR)$(PROJECT).so* $(PREFIX)/$(LDIR)$(ARCH)
 
-$(PREFIX)/$(IDIR)/%.h: $(PREFIX)/$(IDIR) $(IDIR)/%.h
+$(PREFIX)/$(IDIR)/%.h: $(IDIR)/%.h
 	cp $< $@
-	@sed -i '/include .*/d' $@
+	@sed -i '/#include .*\.th/d' $@
 
-install-include: $(patsubst $(IDIR)/%.h,$(PREFIX)/$(IDIR)/%.h,$(wildcard $(IDIR)/*.h))
+install-include: $(PREFIX)/$(IDIR) $(patsubst $(IDIR)/%.h,$(PREFIX)/$(IDIR)/%.h,$(wildcard $(IDIR)/*.h))
 
-install: install-bin install-static install-dynamic install-include
+install: install-bin install-include install-static install-dynamic
 
 # create libraries
 debug-library: DLIB = debug-
@@ -225,11 +225,14 @@ $(IDIR):
 $(TDIR):
 	mkdir $(TDIR)
 
-$(PREFIX)/$(LDIR)$(ARCH):
+$(PREFIX)/lib$(ARCH):
 	mkdir $(PREFIX)/$(LDIR)$(ARCH)
 
 $(PREFIX)/$(BDIR):
-	mkdir $(PREFIX)/bin
+	mkdir $(PREFIX)/$(BDIR)
+
+$(PREFIX)/$(IDIR):
+	mkdir $(PREFIX)/$(IDIR)
 
 # create a tarball from source files
 tarball: TARFILE = $$(echo $(TDIR)/$(PROJECT)_$$(date +"%Y_%m_%d_%H_%M_%S") | tr -d ' ').tar.xz
