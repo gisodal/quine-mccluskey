@@ -25,8 +25,8 @@ PREFIX = $(shell cd "$( dirname "$0" )" && cd ../.. && pwd)
 
 # library and include paths (space separated value)
 ARCH = $(shell getconf LONG_BIT)
-LIBRARY_DIR =
-INCLUDE_DIR =
+LIBRARY_DIR = $(PREFIX)/lib$(ARCH)
+INCLUDE_DIR = $(PREFIX)/include
 
 # static and shared libraries to be linked (space separated values)
 STATIC_LIBRARIES =
@@ -82,7 +82,7 @@ LIBOBJS = $(filter-out $(ODIR)/main.o, $(OBJS))
 DEPS = $(OBJS:.o=.d)
 
 # library / include paths
-INCLUDE_DIR += $(IDIR)
+INCLUDE_DIR := $(IDIR) $(INCLUDE_DIR)
 LIB = $(foreach d, $(LIBRARY_DIR),-L$d)
 INC = $(foreach d, $(INCLUDE_DIR),-I$d)
 
@@ -143,8 +143,8 @@ debug-all: debug-library debug
 
 all: static build
 
-install-bin: $(PREFIX)/bin
-	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin
+install-bin: $(PREFIX)/$(BDIR)
+	cp $(BDIR)/$(PROJECT) $(PREFIX)/$(BDIR)
 
 install-static: $(PREFIX)/$(LDIR)$(ARCH)
 	cp $(LDIR)/$(LDIR)$(PROJECT).a $(PREFIX)/$(LDIR)$(ARCH)
@@ -225,7 +225,7 @@ $(IDIR):
 $(TDIR):
 	mkdir $(TDIR)
 
-$(PREFIX)/lib$(ARCH):
+$(PREFIX)/$(LDIR)$(ARCH):
 	mkdir $(PREFIX)/$(LDIR)$(ARCH)
 
 $(PREFIX)/$(BDIR):
@@ -278,5 +278,5 @@ help:
 	@echo "    obj      : object and dependency files"
 	@echo "    lib      : static/shared libraries"
 	@echo "    bin      : executable binary"
-	@echo "    tar      : source tarballs"
+	@echo "    tar      : create tarball"
 
