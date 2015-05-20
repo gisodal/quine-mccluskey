@@ -152,11 +152,11 @@ install-static: $(PREFIX)/$(LDIR)$(ARCH)
 install-dynamic: $(PREFIX)/$(LDIR)$(ARCH)
 	cp $(LDIR)/$(LDIR)$(PROJECT).so* $(PREFIX)/$(LDIR)$(ARCH)
 
-$(PREFIX)/$(IDIR)/%.h: $(IDIR)/%.h
+$(PREFIX)/$(IDIR)/$(PROJECT)/%.h: $(IDIR)/%.h
 	cp $< $@
 	@sed -i '/#include .*\.th/d' $@
 
-install-include: $(PREFIX)/$(IDIR) $(patsubst $(IDIR)/%.h,$(PREFIX)/$(IDIR)/%.h,$(wildcard $(IDIR)/*.h))
+install-include: $(PREFIX)/$(IDIR)/$(PROJECT) $(patsubst $(IDIR)/%.h,$(PREFIX)/$(IDIR)/$(PROJECT)/%.h,$(wildcard $(IDIR)/*.h))
 
 install: install-bin install-include install-static install-dynamic
 
@@ -231,8 +231,8 @@ $(PREFIX)/$(LDIR)$(ARCH):
 $(PREFIX)/$(BDIR):
 	mkdir $(PREFIX)/$(BDIR)
 
-$(PREFIX)/$(IDIR):
-	mkdir $(PREFIX)/$(IDIR)
+$(PREFIX)/$(IDIR)/$(PROJECT):
+	mkdir -p $(PREFIX)/$(IDIR)/$(PROJECT)
 
 # create a tarball from source files
 tarball: TARFILE = $$(echo $(TDIR)/$(PROJECT)_$$(date +"%Y_%m_%d_%H_%M_%S") | tr -d ' ').tar.xz
