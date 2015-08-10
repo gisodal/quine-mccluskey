@@ -233,18 +233,16 @@ void qm<M>::remove_prime(cube<M> &c){
 
 
 template <typename M>
-void qm<M>::get_clause(vector<uint32_t> &literals, vector<uint8_t> &negated, unsigned int e){
+void qm<M>::get_clause(vector<int32_t> &literals, unsigned int e){
     cover_element<M> p0 = primes[e][0];
     cover_element<M> p1 = primes[e][1];
 
     for(unsigned i = 0; i < variables.size(); i++){
         if(p0.test(i) || !p1.test(i)){
-            literals.push_back(variables[i]);
-
             if(!p0.test(i) && !p1.test(i))
-                negated.push_back(true);
+                literals.push_back(-1*variables[i]);
             else
-                negated.push_back(false);
+                literals.push_back(variables[i]);
         }
     }
 }
