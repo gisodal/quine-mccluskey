@@ -20,16 +20,17 @@ VERSION    = 1
 SUBVERSION = 0
 PATCHLEVEL = 0
 
+# install
+PREFIX = $(shell cd "$( dirname "$0" )" && cd ../.. && pwd)
+
 # library and include paths (space separated value)
-LIBRARY_DIR =
-INCLUDE_DIR =
+ARCH = $(shell getconf LONG_BIT)
+LIBRARY_DIR = $(PREFIX)/lib$(ARCH)
+INCLUDE_DIR = $(PREFIX)/include
 
 # static and shared libraries to be linked (space separated values)
 STATIC_LIBRARIES =
-SHARED_LIBRARIES =
-
-# install
-PREFIX = $(shell cd "$( dirname "$0" )" && cd ../.. && pwd)
+SHARED_LIBRARIES = pthread
 
 # compiler
 CC       = g++
@@ -53,8 +54,8 @@ SDIR = src
 IDIR = include
 TDIR = tar
 UDIR = usr
+
 DIR  = $(shell cd "$( dirname "$0" )" && pwd)
-ARCH = $(shell getconf LONG_BIT)
 
 ifeq ($(ARCH),32)
 	DFLAG = -gdwarf-3
@@ -81,7 +82,7 @@ LIBOBJS = $(filter-out $(ODIR)/main.o, $(OBJS))
 DEPS = $(OBJS:.o=.d)
 
 # library / include paths
-INCLUDE_DIR += $(IDIR)
+INCLUDE_DIR := $(IDIR) $(INCLUDE_DIR)
 LIB = $(foreach d, $(LIBRARY_DIR),-L$d)
 INC = $(foreach d, $(INCLUDE_DIR),-I$d)
 
@@ -107,7 +108,7 @@ DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: $(PROJECT) all install build rebuild debug-all install first library static dynamic debug debug-optimized debug-library profile assembly clean tarball lines help
+.PHONY: $(PROJECT) all build rebuild install install-bin install-static install-dynamic install-include first library static dynamic debug debug-all debug-optimized debug-library profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -140,13 +141,24 @@ profile: build
 # install to PREFIX
 debug-all: debug-library debug
 
-all: library build
+all: static build
 
-install:
-	mkdir -p $(PREFIX)/bin
-	mkdir -p $(PREFIX)/lib$(ARCH)
-	cp $(BDIR)/$(PROJECT) $(PREFIX)/bin
-	cp $(LDIR)/* $(PREFIX)/lib$(ARCH)
+install-bin: $(PREFIX)/$(BDIR)
+	cp $(BDIR)/$(PROJECT) $(PREFIX)/$(BDIR)
+
+install-static: $(PREFIX)/$(LDIR)$(ARCH)
+	cp $(LDIR)/$(LDIR)$(PROJECT).a $(PREFIX)/$(LDIR)$(ARCH)
+
+install-dynamic: $(PREFIX)/$(LDIR)$(ARCH)
+	cp $(LDIR)/$(LDIR)$(PROJECT).so* $(PREFIX)/$(LDIR)$(ARCH)
+
+$(PREFIX)/$(IDIR)/$(PROJECT)/%.h: $(IDIR)/%.h
+	cp $< $@
+	@sed -i '/#include .*\.th/d' $@
+
+install-include: $(PREFIX)/$(IDIR)/$(PROJECT) $(patsubst $(IDIR)/%.h,$(PREFIX)/$(IDIR)/$(PROJECT)/%.h,$(wildcard $(IDIR)/*.h))
+
+install: install-bin install-include install-static install-dynamic
 
 # create libraries
 debug-library: DLIB = debug-
@@ -181,9 +193,9 @@ dynamic: $(LDIR)/$(DYNAMICLIB)
 $(LDIR)/$(DYNAMICLIB): CFLAGS += -fPIC
 $(LDIR)/$(DYNAMICLIB): $(ODIR) $(LIBOBJS) $(LDIR)
 	gcc -shared -Wl,-soname,lib$(PROJECT).so.$(VERSION) -o $(LDIR)/$(DYNAMICLIB) $(LIBOBJS)
-	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so
-	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so.$(VERSION)
-	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so.$(VERSION).$(SUBVERSION)
+	ln -sf $(DYNAMICLIB) $(LDIR)/$(LDIR)$(PROJECT).so
+	ln -sf $(DYNAMICLIB) $(LDIR)/$(LDIR)$(PROJECT).so.$(VERSION)
+	ln -sf $(DYNAMICLIB) $(LDIR)/$(LDIR)$(PROJECT).so.$(VERSION).$(SUBVERSION)
 
 # compile to assembly
 assembly: CFLAGS += -Wa,-a,-ad
@@ -212,6 +224,15 @@ $(IDIR):
 
 $(TDIR):
 	mkdir $(TDIR)
+
+$(PREFIX)/$(LDIR)$(ARCH):
+	mkdir $(PREFIX)/$(LDIR)$(ARCH)
+
+$(PREFIX)/$(BDIR):
+	mkdir $(PREFIX)/$(BDIR)
+
+$(PREFIX)/$(IDIR)/$(PROJECT):
+	mkdir -p $(PREFIX)/$(IDIR)/$(PROJECT)
 
 # create a tarball from source files
 tarball: TARFILE = $$(echo $(TDIR)/$(PROJECT)_$$(date +"%Y_%m_%d_%H_%M_%S") | tr -d ' ').tar.xz
@@ -257,5 +278,5 @@ help:
 	@echo "    obj      : object and dependency files"
 	@echo "    lib      : static/shared libraries"
 	@echo "    bin      : executable binary"
-	@echo "    tar      : source tarballs"
+	@echo "    tar      : create tarball"
 

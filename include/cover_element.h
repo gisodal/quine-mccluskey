@@ -24,6 +24,7 @@ class cover_element {
         bool power_of_two_or_zero() const;
         bool operator==(const cover_element&) const;
         bool operator!=(const cover_element&) const;
+        bool operator<(const cover_element&) const;
         cover_element& operator[](unsigned int i);
         cover_element& operator=(T);
         cover_element& operator=(const cover_element&);
