@@ -3,5 +3,10 @@
 Just run 'make'. The binary is installed in path/to/source/bin.
 
 to run:
-bin/quine-mccluskey -v <#variables> -o [model1 [, model2 [, ...] ] ]
+  > bin/quine-mccluskey -v <#variables> -o [model1 [, model2 [, ...] ] ]
+
+example:
+
+  > bin/quine-mccluskey -v 3 -o 1,2
+  ((a ∧ ¬b ∧ ¬c)  ∨  (¬a ∧ b ∧ ¬c))
 

@@ -56,6 +56,7 @@ int main (int argc, char **argv){
                 return 1;
         }
     }
+
     for (index = optind; index < argc; index++)
         fprintf(stderr, "Ingoring argument '%s'\n", argv[index]);
 
