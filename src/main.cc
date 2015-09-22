@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <ctype.h>
 
 using namespace std;
 #if __LP64__
@@ -15,28 +16,50 @@ const int MAX_QM = 64;
 typedef uint64_t T;
 #endif
 
+void help(){
+    fprintf (stderr, "Usage: bin/quine-mccluskey -v <#variables> -o <model1[,model2[,...]]>\n");
+}
+
+int isnumber (const char * s){
+    if (s == NULL || *s == '\0' || isspace(*s))
+      return 0;
+    char * p;
+    strtod (s, &p);
+    return *p == '\0';
+}
+
 int main (int argc, char **argv){
     qm<T> q;
 
     opterr = 0;
     int i,c,index;
     char *opt;
+    bool req[2] = { 0 };
     while ((c = getopt (argc, argv, "v:o:")) != -1){
         switch (c){
             case 'v':
-                if(atoi(optarg) > MAX_QM){
-                    fprintf(stderr, "Cannot handle more than %d variables\n", MAX_QM);
-                    exit(1);
-                }
-
-                for(i = 0; i < atoi(optarg); i++)
-                    q.add_variable(i);
+                if(isnumber(optarg)){
+                    if(atoi(optarg) > MAX_QM){
+                        fprintf(stderr, "Cannot handle more than %d variables\n", MAX_QM);
+                        exit(1);
+                    }
+                    for(i = 0; i < atoi(optarg); i++)
+                        q.add_variable(i);
+                    req[0] = 1;
+                } else fprintf(stderr, "Argument to -v (%s) is not a number\n", optarg);
                 break;
             case 'o':
                 opt = strtok (optarg,",");
+                req[1] = 1;
                 while(opt != NULL){
-                    q.add_model(atoi(opt));
-                    opt = strtok (NULL, ",");
+                    if(isnumber(opt)){
+                        q.add_model(atoi(opt));
+                        opt = strtok (NULL, ",");
+                    } else {
+                        fprintf(stderr, "Argument to -o (%s) is not a number\n", opt);
+                        req[1] = 0;
+                        break;
+                    }
                 }
                 break;
             case '?':
@@ -49,19 +72,21 @@ int main (int argc, char **argv){
                 else
                     fprintf (stderr, "Unknown option character `\\x%x'.\n", optopt);
 
-                fprintf (stderr, "Usage: bin/quine-mccluskey -v <#variables> -o <model1[,model2[,...]]>\n");
+                help();
                 return 1;
             default:
-                    fprintf (stderr, "Usage: bin/quine-mccluskey -v <#variables> -o <model1[,model2[,...]]>\n");
+                help();
                 return 1;
         }
     }
-
     for (index = optind; index < argc; index++)
         fprintf(stderr, "Ingoring argument '%s'\n", argv[index]);
 
-    q.solve();
-    q.print(true);
+
+    if(req[0] && req[1]){
+        q.solve();
+        q.print(true);
+    } else help();
 
     return 0;
 }
