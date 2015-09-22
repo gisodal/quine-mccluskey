@@ -1,9 +1,9 @@
 # Quine-McCluskey
-The Quine-McCluskey Algorithm in C++.
+The Quine-McCluskey Algorithm in C++, using pthreads.
 
 ## Synopsis
 
-This is an implementation of the Quine-McCluskey algorithm, which produces prime implicants in sum-of-product (SOP) form. Patrick's method is used to obtain the canonical SOP form.
+This is a parallel implementation of the Quine-McCluskey algorithm, which produces prime implicants in sum-of-product (SOP) form. Patrick's method is used to obtain the canonical SOP form.
 
 ## Usage
 
@@ -19,6 +19,6 @@ For example:
 Just type:
 > make
 
-for other option, type:
+for other options, type:
 > make help
 

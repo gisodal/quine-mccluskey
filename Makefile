@@ -108,7 +108,7 @@ DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: $(PROJECT) all build rebuild install install-bin install-static install-dynamic install-include first library static dynamic debug debug-all debug-optimized debug-library profile assembly clean tarball lines help
+.PHONY: $(PROJECT) all build rebuild x86 x64 install install-bin install-static install-dynamic install-include first library static dynamic debug debug-all debug-optimized debug-library profile assembly clean tarball lines help
 
 # default rule
 $(PROJECT): build
@@ -120,6 +120,14 @@ $(PROJECT): build
 build: $(BDIR)/$(PROJECT)
 
 rebuild: clean build
+
+x86: ARCH=32
+x86: CFLAGS += -m32
+x86: build
+
+x64: ARCH=64
+x64: CFLAGS += -m64
+x64: build
 
 # stop at first error of compilation
 first: CFLAGS += -Wfatal-errors
@@ -260,6 +268,8 @@ help:
 	@echo "Options   :"
 	@echo "    build*   : compile to binary"
 	@echo "    rebuild  : recompile"
+	@echo "    x86      : Explicitly compile for 32bit architecture"
+	@echo "    x64      : Explicitly compile for 64bit architecture"
 	@echo "    all      : compile binary and libraries"
 	@echo "    debug    : compile with debug symbols"
 	@echo "    lines    : print #lines of code to compile"
