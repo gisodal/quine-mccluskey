@@ -1,5 +1,5 @@
 # Quine-McCluskey
-The Quine-McCluskey Algorithm in C++, using pthreads.
+The Quine-McCluskey Algorithm in C++.
 
 ## Synopsis
 
@@ -11,23 +11,23 @@ This is a parallel implementation of the Quine-McCluskey algorithm, which produc
 
 For example, given f(a,b,c) = (¬a ∧ ¬b ∧ ¬c) ∨  (¬a ∧ b ∧ ¬c) ∨ (a ∧ ¬b ∧ c) ∨ (a ∧ b ∧ c):
 
-| Clause | Binary | Decimal |
-| :---: | :---: | :---: |
-| (¬a ∧ ¬b ∧ ¬c) | 000 |  0 |
-| (¬a ∧ b ∧ ¬c) | 010 |  2 |
-| (a ∧ ¬b ∧ c) | 101 |  5 |
-| (a ∧ b ∧ c) | 111 |  7 |
+| Clause          | Binary | Decimal |
+| :-------------: | :----: | :-----: |
+| (¬a ∧ ¬b ∧ ¬c)  | 000    |  0      |
+| (¬a ∧ b ∧ ¬c)   | 010    |  2      |
+| (a ∧ ¬b ∧ c)    | 101    |  5      |
+| (a ∧ b ∧ c)     | 111    |  7      |
 
 Type:
-> \> bin/quine-mccluskey -v3  -o0,2,5,7
->
-> ((¬a ∧ ¬c)  ∨  (a ∧ c))
+  > bin/quine-mccluskey -v3 -o0,2,5,7
+
+  ((¬a ∧ ¬c)  ∨  (a ∧ c))
 
 ## Installation
 
 Just type:
 > make
 
-for other options, type:
+for other option, type:
 > make help
 
