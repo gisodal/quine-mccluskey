@@ -28,6 +28,6 @@ Type:
 Just type:
 > make
 
-for other option, type:
+For other options, type:
 > make help
 
