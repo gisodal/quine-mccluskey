@@ -4,15 +4,14 @@
 
 # To use this makefile on any source tree, only change the user variables
 # below. The directory structure should abide by the following tree:
-# 	- directory src      : put source files here (*.[c,cc,cpp])
+# 	- directory src      : put source files here (*.[c,cc])
 # 	- directory include  : put header files here (*.h)
 
 # ------------------------------------------------------------------------------
 # User variables
 # ------------------------------------------------------------------------------
-# see 'Makefile' for more information
 
-# project name
+# project name (directory name is used if left blank)
 PROJECT =
 
 # project version
@@ -20,7 +19,7 @@ VERSION    = 1
 SUBVERSION = 0
 PATCHLEVEL = 0
 
-# install
+# install prefix
 PREFIX = $(shell cd "$( dirname "$0" )" && cd ../.. && pwd)
 
 # library and include paths (space separated value)
@@ -32,9 +31,7 @@ INCLUDE_DIR = $(PREFIX)/include
 STATIC_LIBRARIES =
 SHARED_LIBRARIES = pthread
 
-# compiler
-CC       = g++
-EXT      = cc
+# compiler and compiler flags
 CXXFLAGS = -std=c++11
 CFLAGS   = -w
 O        = -O3
@@ -53,33 +50,35 @@ ODIR = obj
 SDIR = src
 IDIR = include
 TDIR = tar
-UDIR = usr
-
 DIR  = $(shell cd "$( dirname "$0" )" && pwd)
 
-ifeq ($(ARCH),32)
-	DFLAG = -gdwarf-3
-else
-	DFLAG = -ggdb
-endif
+ARCH = $(shell getconf LONG_BIT)
+CDFLAGS  = -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers
 
-CDFLAGS  = $(DFLAG) -Wall -Wextra -D DEBUG -Wno-format -Wno-write-strings -Wno-unused-function -Wno-system-headers
-
-# containting directory is default project name
+# set containting directory is default project name
 ifeq ($(PROJECT),)
 	PROJECT=$(shell basename $(DIR))
 endif
 
 # install dir
 ifeq ($(PREFIX),)
-	PREFIX=usr
+	PREFIX=$(HOME)
+endif
+
+# set compiler
+ifeq ($(wildcard $(SDIR)/*.cc),)
+	CC=gcc
+else
+	CC=g++
 endif
 
 # sources, objects and dependecies
-SRCS = $(wildcard $(SDIR)/*.$(EXT))
-OBJS = $(patsubst $(SDIR)/%.$(EXT),$(ODIR)/%.o,$(SRCS))
-LIBOBJS = $(filter-out $(ODIR)/main.o, $(OBJS))
-DEPS = $(OBJS:.o=.d)
+SRCS     = $(wildcard $(SDIR)/*.c)
+SRCS    += $(wildcard $(SDIR)/*.cc)
+OBJS     = $(patsubst $(SDIR)/%.c,$(ODIR)/%.o,$(wildcard $(SDIR)/*.c))
+OBJS    += $(patsubst $(SDIR)/%.cc,$(ODIR)/%.o,$(wildcard $(SDIR)/*.cc))
+LIBOBJS  = $(filter-out $(ODIR)/main.o, $(OBJS))
+DEPS     = $(OBJS:.o=.d)
 
 # library / include paths
 INCLUDE_DIR := $(IDIR) $(INCLUDE_DIR)
@@ -100,7 +99,7 @@ else ifneq ($(STATIC),)
 	LIB += -Wl,-Bdynamic
 endif
 
-STATICLIB = lib$(PROJECT).a
+STATICLIB  = lib$(PROJECT).a
 DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 
 # ------------------------------------------------------------------------------
@@ -108,114 +107,123 @@ DYNAMICLIB = lib$(PROJECT).so.$(VERSION).$(SUBVERSION).$(PATCHLEVEL)
 # ------------------------------------------------------------------------------
 
 # rules not representing files
-.PHONY: $(PROJECT) all build rebuild x86 x64 install install-bin install-static install-dynamic install-include first library static dynamic debug debug-all debug-optimized debug-library profile assembly clean tarball lines help
+.PHONY: $(PROJECT)  \
+	all             \
+	build           \
+	rebuild         \
+	build-x86       \
+	build-x64       \
+	debug           \
+	profile         \
+	assembly        \
+	install-bin     \
+	install-static  \
+	install-dynamic \
+	install-include \
+	install         \
+	static          \
+	debug-static    \
+	dynamic         \
+	debug-dynamic   \
+	tarball         \
+	lines           \
+	clean           \
+	help
 
 # default rule
-$(PROJECT): build
+$(PROJECT): all
 
-# include file dependencies
+# include file dependencies (to recompile when headers change)
 -include $(DEPS)
 
 # main compile rules
+all: build
+
 build: $(BDIR)/$(PROJECT)
 
 rebuild: clean build
 
-x86: ARCH=32
-x86: CFLAGS += -m32
-x86: build
+# explicitly compile for x86 architecture
+build-x86: ARCH=32
+build-x86: CFLAGS += -m32
+build-x86: build
 
-x64: ARCH=64
-x64: CFLAGS += -m64
-x64: build
-
-# stop at first error of compilation
-first: CFLAGS += -Wfatal-errors
-first: build
+# explicitly compile for 64 bit architecture
+build-x64: ARCH=64
+build-x64: CFLAGS += -m64
+build-x64: build
 
 # compile with debug symbols
 debug: CFLAGS = $(CDFLAGS)
 debug: O = -O0
 debug: build
 
-# compile with optimizations and debug symbols
-odebug: CFLAGS = $(CDFLAGS)
-odebug: build
-
 # compile with profile
 profile: O = -O0 -pg
 profile: build
-
-# install to PREFIX
-debug-all: debug-library debug
-
-all: static build
-
-install-bin: $(PREFIX)/$(BDIR)
-	cp $(BDIR)/$(PROJECT) $(PREFIX)/$(BDIR)
-
-install-static: $(PREFIX)/$(LDIR)$(ARCH)
-	cp $(LDIR)/$(LDIR)$(PROJECT).a $(PREFIX)/$(LDIR)$(ARCH)
-
-install-dynamic: $(PREFIX)/$(LDIR)$(ARCH)
-	cp $(LDIR)/$(LDIR)$(PROJECT).so* $(PREFIX)/$(LDIR)$(ARCH)
-
-$(PREFIX)/$(IDIR)/$(PROJECT)/%.h: $(IDIR)/%.h
-	cp $< $@
-	@sed -i '/#include .*\.th/d' $@
-
-install-include: $(PREFIX)/$(IDIR)/$(PROJECT) $(patsubst $(IDIR)/%.h,$(PREFIX)/$(IDIR)/$(PROJECT)/%.h,$(wildcard $(IDIR)/*.h))
-
-install: install-bin install-include install-static install-dynamic
-
-# create libraries
-debug-library: DLIB = debug-
-debug-library: library
-
-library:
-	@echo '==== Creating static library ===='
-	$(RM) -r $(ODIR)
-	$(MAKE) $(DLIB)static
-	@echo '==== Creating dynamic library ===='
-	$(RM) -r $(ODIR)
-	$(MAKE) $(DLIB)dynamic
-	$(RM) -r $(ODIR)
-
-# create static library
-debug-static: CFLAGS = $(CDFLAGS)
-debug-static: O = -O0
-debug-static: static
-
-static: $(LDIR)/$(STATICLIB)
-
-$(LDIR)/$(STATICLIB): $(ODIR) $(LIBOBJS) $(LDIR)
-	ar rcs $(LDIR)/$(STATICLIB) $(LIBOBJS)
-
-# create dynamic library
-debug-dynamic: CFLAGS = $(CDFLAGS)
-debug-dynamic: O = -O0
-debug-dynamic: dynamic
-
-dynamic: $(LDIR)/$(DYNAMICLIB)
-
-$(LDIR)/$(DYNAMICLIB): CFLAGS += -fPIC
-$(LDIR)/$(DYNAMICLIB): $(ODIR) $(LIBOBJS) $(LDIR)
-	gcc -shared -Wl,-soname,lib$(PROJECT).so.$(VERSION) -o $(LDIR)/$(DYNAMICLIB) $(LIBOBJS)
-	ln -sf $(DYNAMICLIB) $(LDIR)/$(LDIR)$(PROJECT).so
-	ln -sf $(DYNAMICLIB) $(LDIR)/$(LDIR)$(PROJECT).so.$(VERSION)
-	ln -sf $(DYNAMICLIB) $(LDIR)/$(LDIR)$(PROJECT).so.$(VERSION).$(SUBVERSION)
 
 # compile to assembly
 assembly: CFLAGS += -Wa,-a,-ad
 assembly: build
 
-# create object files and dependencies
-$(ODIR)/%.o: $(SDIR)/%.$(EXT)
-	$(CC) -o $@ -c $< $(O) $(CXXFLAGS) $(CFLAGS) $(INC) -MMD
+# create static library
+static: $(LDIR)/$(STATICLIB)
+
+$(LDIR)/$(STATICLIB): $(LIBOBJS) | $(LDIR)
+	ar rcs $(LDIR)/$(STATICLIB) $(LIBOBJS)
+
+debug-static: CFLAGS = $(CDFLAGS)
+debug-static: O = -O0
+debug-static: static
+
+# create dynamic library
+dynamic: $(LDIR)/$(DYNAMICLIB)
+
+$(LDIR)/$(DYNAMICLIB): CFLAGS += -fPIC
+$(LDIR)/$(DYNAMICLIB): $(LIBOBJS) | $(LDIR)
+	$(CC) -shared -fPIC -Wl,-soname,lib$(PROJECT).so.$(VERSION) -o $(LDIR)/$(DYNAMICLIB) $(LIBOBJS)
+	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so
+	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so.$(VERSION)
+	ln -sf $(DYNAMICLIB) $(LDIR)/lib$(PROJECT).so.$(VERSION).$(SUBVERSION)
+
+debug-dynamic: CFLAGS = $(CDFLAGS)
+debug-dynamic: O = -O0
+debug-dynamic: dynamic
+
+# create object and dependency files
+$(ODIR)/%.o: $(SDIR)/%.c | $(ODIR)
+	gcc -o $@ -c $< $(O) $(CFLAGS) $(INC) -MMD
+
+$(ODIR)/%.o: $(SDIR)/%.cc | $(ODIR)
+	g++ -o $@ -c $< $(O) $(CFLAGS) $(CXXFLAGS) $(INC) -MMD
 
 # create (link) executable binary
-$(BDIR)/$(PROJECT): $(ODIR) $(OBJS) $(BDIR)
+$(BDIR)/$(PROJECT): $(OBJS) | $(BDIR)
 	$(CC) -o $@ $(OBJS) $(LIB) $(DYNAMIC)
+
+# install to PREFIX
+install-bin: $(PREFIX)/$(BDIR)/$(PROJECT)
+
+$(PREFIX)/$(BDIR)/$(PROJECT): $(BDIR)/$(PROJECT) | $(PREFIX)/$(BDIR)
+	cp $(BDIR)/$(PROJECT) $(PREFIX)/$(BDIR)/$(PROJECT)
+
+install-static: $(PREFIX)/$(LDIR)$(ARCH)/$(STATICLIB)
+
+$(PREFIX)/$(LDIR)$(ARCH)/$(STATICLIB): $(LDIR)/$(STATICLIB) | $(PREFIX)/$(LDIR)$(ARCH)
+	cp $(LDIR)/$(STATICLIB) $(PREFIX)/$(LDIR)$(ARCH)
+
+install-dynamic: $(PREFIX)/$(LDIR)$(ARCH)/$(DYNAMICLIB)
+
+$(PREFIX)/$(LDIR)$(ARCH)/$(DYNAMICLIB): $(LDIR)/$(DYNAMICLIB) | $(PREFIX)/$(LDIR)$(ARCH)
+		cp $(LDIR)/lib$(PROJECT).so* $(PREFIX)/$(LDIR)$(ARCH)
+
+install-include: $(PREFIX)/$(IDIR)/$(PROJECT) $(patsubst $(IDIR)/%.h,$(PREFIX)/$(IDIR)/$(PROJECT)/%.h,$(wildcard $(IDIR)/*.h))
+
+$(PREFIX)/$(IDIR)/$(PROJECT)/%.h: $(IDIR)/%.h
+	cp $< $@
+	@sed -i '/#include .*\.tcc/d' $@
+
+install: install-bin install-include install-static
 
 # create directories
 $(LDIR):
@@ -234,10 +242,10 @@ $(TDIR):
 	mkdir $(TDIR)
 
 $(PREFIX)/$(LDIR)$(ARCH):
-	mkdir $(PREFIX)/$(LDIR)$(ARCH)
+	mkdir -p $(PREFIX)/$(LDIR)$(ARCH)
 
 $(PREFIX)/$(BDIR):
-	mkdir $(PREFIX)/$(BDIR)
+	mkdir -p $(PREFIX)/$(BDIR)
 
 $(PREFIX)/$(IDIR)/$(PROJECT):
 	mkdir -p $(PREFIX)/$(IDIR)/$(PROJECT)
@@ -245,7 +253,7 @@ $(PREFIX)/$(IDIR)/$(PROJECT):
 # create a tarball from source files
 tarball: TARFILE = $$(echo $(TDIR)/$(PROJECT)_$$(date +"%Y_%m_%d_%H_%M_%S") | tr -d ' ').tar.xz
 tarball: $(TDIR)
-	@XZ_OPT="-9" tar --exclude=".*" -cvJf $(TARFILE) $(IDIR) $(SDIR) Makefile README*; echo;
+	@XZ_OPT="-9" tar --exclude=".*" -cvJf $(TARFILE) $(IDIR) $(SDIR) Makefile readme* README* INSTALL LICENSE 2>/dev/null; echo;
 	@if [ -f $(TARFILE) ]; then                    \
 	     echo "Created file: $(TARFILE)";          \
 	 else                                          \
@@ -254,7 +262,7 @@ tarball: $(TDIR)
 
 # print how many lines of code to compile
 lines:
-	@wc -l include/* src/*
+	@wc -l $(IDIR)/* $(SDIR)/*
 
 # cleanup
 clean:
@@ -266,27 +274,27 @@ help:
 	@echo "    make [option]"
 	@echo ""
 	@echo "Options   :"
-	@echo "    build*   : compile to binary"
-	@echo "    rebuild  : recompile"
-	@echo "    x86      : Explicitly compile for 32bit architecture"
-	@echo "    x64      : Explicitly compile for 64bit architecture"
-	@echo "    all      : compile binary and libraries"
-	@echo "    debug    : compile with debug symbols"
-	@echo "    lines    : print #lines of code to compile"
-	@echo "    library  : create static and dynamic libraries"
-	@echo "    static   : create static library"
-	@echo "    dynamic  : create dynamic library"
-	@echo "    install  : install project at PREFIX"
-	@echo "    clean    : remove object files, libraries and binary"
-	@echo "    tarball  : create tarball of source files"
+	@echo "    build*    : compile to binary"
+	@echo "    rebuild   : recompile"
+	@echo "    build-x86 : Explicitly compile for 32bit architecture"
+	@echo "    build-x64 : Explicitly compile for 64bit architecture"
+	@echo "    debug     : compile with debug symbols"
+	@echo "    profile   : compile with profiling capabilities"
+	@echo "    assembly  : print assembly"
+	@echo "    lines     : print #lines of code to compile"
+	@echo "    static    : create static library"
+	@echo "    dynamic   : create dynamic library"
+	@echo "    install   : compile and install project to PREFIX"
+	@echo "    clean     : remove object files, libraries and binary"
+	@echo "    tarball   : create tarball of source files"
 	@echo ""
 	@echo "    * = default"
 	@echo ""
 	@echo "Directory hierarchy :"
-	@echo "    src      : source files (*.$(EXT))"
+	@echo "    src      : source files (*.[c|cc])"
 	@echo "    include  : header files (*.h)"
 	@echo "    obj      : object and dependency files"
 	@echo "    lib      : static/shared libraries"
 	@echo "    bin      : executable binary"
-	@echo "    tar      : create tarball"
+	@echo "    tar      : tarballs"
 
