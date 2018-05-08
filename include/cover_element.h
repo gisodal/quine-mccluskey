@@ -37,7 +37,7 @@ class cover_element {
         T value;
 };
 
-#include "../src/cover_element.tcc"
+#include "cover_element.hxx"
 
 typedef uint32_t element_t;
 typedef cover_element<element_t> cover_element_t;
