@@ -6,12 +6,15 @@ string(REPLACE " " "_" PROJECT ${PROJECT})
 project(${PROJECT} C CXX)
 
 # set compiler flags
+message(STATUS "Build type: '${CMAKE_BUILD_TYPE}'")
 set(CMAKE_OPTIMIZATION "-O3")
-if (CMAKE_BUILD_TYPE MATCHES DEBUG)
+if (CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES DEBUG)
     set(CMAKE_OPTIMIZATION "-O0")
+else()
+    set(W "-w")
 endif()
-set(CMAKE_CXX_FLAGS "--std=c++11 ${CMAKE_OPTIMIZATION}")
-set(CMAKE_C_FLAGS "${CMAKE_OPTIMIZATION}")
+set(CMAKE_C_FLAGS "${W} ${CMAKE_OPTIMIZATION}")
+set(CMAKE_CXX_FLAGS "--std=c++11 ${CMAKE_C_FLAGS}")
 set(CMAKE_C_FLAGS_RELEASE "-DNDEBUG")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
 set(CMAKE_C_FLAGS_DEBUG "-ggdb3 -Wall -Wextra -DDEBUG   \
@@ -34,6 +37,7 @@ list(REMOVE_ITEM LIB_SOURCES ${SOURCE_DIR}/main.cc)
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     get_filename_component(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
 endif()
+message(STATUS "Prefix: ${CMAKE_INSTALL_PREFIX}")
 include_directories( ${INCLUDE_DIR} ${CMAKE_INSTALL_PREFIX}/include)
 
 # create executable
