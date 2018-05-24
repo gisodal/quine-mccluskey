@@ -25,9 +25,9 @@ Type:
 
 ## Installation
 
-Just type:
-> make
+To install to `<install_dir>`, type
 
-For other options, type:
-> make help
-
+    > mkdir build
+    > cd build
+    > cmake -DCMAKE_INSTALL_PREFIX:PATH=<install_dir> ..
+    > make install

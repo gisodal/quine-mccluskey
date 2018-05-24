@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 
+message(STATUS "Prefix: ${CMAKE_INSTALL_PREFIX}")
+
 # set directory as project name
 get_filename_component(PROJECT ${CMAKE_CURRENT_LIST_DIR} NAME)
 string(REPLACE " " "_" PROJECT ${PROJECT})
@@ -34,10 +36,6 @@ set(MAIN ${SOURCE_DIR}/main.cc)
 list(REMOVE_ITEM SOURCES ${MAIN})
 
 ## set include directories
-if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    get_filename_component(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_LIST_DIR}/../.." ABSOLUTE)
-endif()
-message(STATUS "Prefix: ${CMAKE_INSTALL_PREFIX}")
 include_directories( ${INCLUDE_DIR} ${CMAKE_INSTALL_PREFIX}/include)
 
 # create library
