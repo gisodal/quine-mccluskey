@@ -24,5 +24,6 @@ tar
 bin
 obj
 lib
-debug
-build
+/debug
+/build
+/release
