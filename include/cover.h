@@ -81,7 +81,7 @@ class cover<T,0> {
         cover& xor_assign(cover&, const unsigned int);
 
     private:
-        T elements[];
+        T *elements;
 };
 
 #include "cover.hxx"
